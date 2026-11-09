@@ -1,4 +1,4 @@
-# Leitor Voz
+# Lê Pra Mim
 
 App Android que lê em voz alta qualquer texto do celular, pensado para quem tem dislexia ou prefere ouvir a ler.
 

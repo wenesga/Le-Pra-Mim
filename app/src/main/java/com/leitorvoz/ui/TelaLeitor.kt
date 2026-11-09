@@ -91,7 +91,7 @@ fun TelaLeitor(vm: LeitorViewModel) {
             Modifier.fillMaxSize().padding(margens).verticalScroll(rememberScrollState()).padding(Espaco.gg),
             verticalArrangement = Arrangement.spacedBy(Espaco.gg),
         ) {
-            Text("Leitor Voz", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = Espaco.m, start = Espaco.p))
+            Text("Lê Pra Mim", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = Espaco.m, start = Espaco.p))
             CartaoLeitura(colar)
             CartaoVoz(vm)
             CartaoAtalhos()
