@@ -86,7 +86,7 @@ fun TelaLeitor(vm: LeitorViewModel) {
     val contexto = LocalContext.current
     val avisos = remember { SnackbarHostState() }
     val escopo = rememberCoroutineScope()
-    val colar = {
+    val colar: () -> Unit = {
         val clip = contexto.getSystemService(ClipboardManager::class.java).primaryClip
         val t = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(contexto)?.toString()
         if (t.isNullOrBlank()) escopo.launch { avisos.showSnackbar("Nenhum texto copiado") } else Leitura.ler(contexto, t)
