@@ -225,21 +225,31 @@ class LeituraServico : Service() {
     companion object {
         private const val CANAL = "leitura"
         private const val LIMITE = 3500
-        private val FRASE = Regex("[^.!?\\n]+[.!?]*")
+        /** Fim de frase: pontuação seguida de espaço ou do fim do texto, ou quebra de linha. Assim "Academia.edu" e "1.500" ficam inteiros. */
+        private val FIM = Regex("[.!?…]+(?=\\s|$)|\\n")
 
         /** Divide em frases, com a posição de cada uma, para voltar, avançar e destacar. */
         fun dividir(texto: String): List<IntRange> {
             val saida = mutableListOf<IntRange>()
-            FRASE.findAll(texto).forEach { m ->
-                if (m.value.isBlank()) return@forEach
-                var ini = m.range.first
-                while (m.range.last - ini + 1 > LIMITE) {
+            fun guardar(inicio: Int, fim: Int) {
+                var ini = inicio
+                while (ini < fim && texto[ini].isWhitespace()) ini++
+                var ult = fim - 1
+                while (ult >= ini && texto[ult].isWhitespace()) ult--
+                if (ult < ini) return
+                while (ult - ini + 1 > LIMITE) {
                     val corte = texto.lastIndexOf(' ', ini + LIMITE).takeIf { it > ini } ?: (ini + LIMITE)
                     saida += ini until corte
                     ini = corte
                 }
-                saida += ini..m.range.last
+                saida += ini..ult
             }
+            var inicio = 0
+            FIM.findAll(texto).forEach { m ->
+                guardar(inicio, m.range.last + 1)
+                inicio = m.range.last + 1
+            }
+            guardar(inicio, texto.length)
             return saida
         }
     }
