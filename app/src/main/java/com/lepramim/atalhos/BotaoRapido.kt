@@ -1,4 +1,4 @@
-package com.leitorvoz.atalhos
+package com.lepramim.atalhos
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -6,8 +6,8 @@ import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.leitorvoz.leitura.Leitura
-import com.leitorvoz.leitura.Situacao
+import com.lepramim.leitura.Leitura
+import com.lepramim.leitura.Situacao
 
 /** Botão nas configurações rápidas: lê o que foi copiado ou para a leitura. */
 class BotaoRapido : TileService() {

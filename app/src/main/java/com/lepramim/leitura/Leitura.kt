@@ -1,4 +1,4 @@
-package com.leitorvoz.leitura
+package com.lepramim.leitura
 
 import android.content.Context
 import android.content.Intent

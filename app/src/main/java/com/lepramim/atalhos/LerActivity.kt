@@ -1,12 +1,12 @@
-package com.leitorvoz.atalhos
+package com.lepramim.atalhos
 
 import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import com.leitorvoz.leitura.Leitura
-import com.leitorvoz.leitura.Situacao
+import com.lepramim.leitura.Leitura
+import com.lepramim.leitura.Situacao
 
 /**
  * Tela invisível que recebe o texto e passa para o serviço de leitura.
@@ -47,6 +47,6 @@ class LerActivity : Activity() {
     }
 
     companion object {
-        const val ACAO_COPIADO = "com.leitorvoz.LER_COPIADO"
+        const val ACAO_COPIADO = "com.lepramim.LER_COPIADO"
     }
 }

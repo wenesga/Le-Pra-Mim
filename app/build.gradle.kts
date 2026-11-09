@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.leitorvoz"
+    namespace = "com.lepramim"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.leitorvoz"
+        applicationId = "com.lepramim"
         minSdk = 30
         targetSdk = 37
         versionCode = 1

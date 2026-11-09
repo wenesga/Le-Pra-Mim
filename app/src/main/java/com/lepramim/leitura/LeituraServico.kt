@@ -1,4 +1,4 @@
-package com.leitorvoz.leitura
+package com.lepramim.leitura
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,10 +13,10 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.NotificationCompat
-import com.leitorvoz.MainActivity
-import com.leitorvoz.R
-import com.leitorvoz.data.Preferencias
-import com.leitorvoz.data.Repositorio
+import com.lepramim.MainActivity
+import com.lepramim.R
+import com.lepramim.data.Preferencias
+import com.lepramim.data.Repositorio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

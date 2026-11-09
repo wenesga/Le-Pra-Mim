@@ -1,11 +1,11 @@
-package com.leitorvoz.ui
+package com.lepramim.ui
 
 import android.app.Application
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.leitorvoz.data.Preferencias
-import com.leitorvoz.data.Repositorio
+import com.lepramim.data.Preferencias
+import com.lepramim.data.Repositorio
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

@@ -1,4 +1,4 @@
-package com.leitorvoz.atalhos
+package com.lepramim.atalhos
 
 import android.accessibilityservice.AccessibilityButtonController
 import android.accessibilityservice.AccessibilityService
@@ -26,7 +26,7 @@ import android.widget.Toast
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.leitorvoz.leitura.Leitura
+import com.lepramim.leitura.Leitura
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt

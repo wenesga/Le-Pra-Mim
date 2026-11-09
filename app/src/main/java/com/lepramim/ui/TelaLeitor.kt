@@ -1,4 +1,4 @@
-package com.leitorvoz.ui
+package com.lepramim.ui
 
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -68,10 +68,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.leitorvoz.atalhos.MarcarTela
-import com.leitorvoz.leitura.Leitura
-import com.leitorvoz.leitura.Situacao
-import com.leitorvoz.ui.theme.Espaco
+import com.lepramim.atalhos.MarcarTela
+import com.lepramim.leitura.Leitura
+import com.lepramim.leitura.Situacao
+import com.lepramim.ui.theme.Espaco
 import kotlinx.coroutines.launch
 import java.util.Locale
 

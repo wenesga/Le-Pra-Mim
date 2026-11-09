@@ -1,17 +1,17 @@
-package com.leitorvoz
+package com.lepramim
 
 import android.Manifest
 import android.content.ClipboardManager
-import com.leitorvoz.leitura.Leitura
+import com.lepramim.leitura.Leitura
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import com.leitorvoz.ui.LeitorViewModel
-import com.leitorvoz.ui.TelaLeitor
-import com.leitorvoz.ui.theme.TemaLeitor
+import com.lepramim.ui.LeitorViewModel
+import com.lepramim.ui.TelaLeitor
+import com.lepramim.ui.theme.TemaLeitor
 
 class MainActivity : ComponentActivity() {
     private val vm: LeitorViewModel by viewModels()

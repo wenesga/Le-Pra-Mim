@@ -1,4 +1,4 @@
-package com.leitorvoz.ui.theme
+package com.lepramim.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
