@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Leitor Voz</string>
+    <string name="acao_ler">Ler</string>
+    <string name="acessibilidade_descricao">Marque um trecho da tela para ouvir o texto, mesmo o que não pode ser selecionado.</string>
+</resources>
