@@ -21,11 +21,7 @@ class BotaoRapido : TileService() {
 
     @SuppressLint("StartActivityAndCollapseDeprecated")
     override fun onClick() {
-        if (Leitura.situacao.value != Situacao.PARADO) {
-            Leitura.comando(this, Leitura.ACAO_PARAR)
-            qsTile?.apply { state = Tile.STATE_INACTIVE; updateTile() }
-            return
-        }
+        // A tela invisível decide: texto novo lê; o mesmo que está lendo para.
         val i = Intent(this, LerActivity::class.java)
             .setAction(LerActivity.ACAO_COPIADO)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

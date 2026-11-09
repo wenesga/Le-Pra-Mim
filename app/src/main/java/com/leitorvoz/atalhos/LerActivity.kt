@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import com.leitorvoz.leitura.Leitura
+import com.leitorvoz.leitura.Situacao
 
 /**
  * Tela invisível que recebe o texto e passa para o serviço de leitura.
@@ -30,7 +31,13 @@ class LerActivity : Activity() {
         if (!hasFocus || !esperandoFoco) return
         esperandoFoco = false
         val clip = getSystemService(ClipboardManager::class.java).primaryClip
-        concluir(clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString())
+        val texto = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        if (!texto.isNullOrEmpty() && texto == Leitura.texto.value && Leitura.situacao.value != Situacao.PARADO) {
+            Leitura.comando(this, Leitura.ACAO_PARAR)
+            finish()
+            return
+        }
+        concluir(texto)
     }
 
     private fun concluir(texto: String?) {
