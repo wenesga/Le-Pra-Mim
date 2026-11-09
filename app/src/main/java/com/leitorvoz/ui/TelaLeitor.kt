@@ -68,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -156,8 +157,27 @@ private fun CartaoLeitura(colar: () -> Unit) {
                     append(texto.substring(fim))
                 }
             }
-            Box(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-                Text(anotado, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f))
+            val rolagem = rememberScrollState()
+            var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+            // Mantém a linha lida visível, um pouco abaixo do topo do cartão.
+            LaunchedEffect(r?.first, layout) {
+                val l = layout ?: return@LaunchedEffect
+                val inicio = r?.first ?: return@LaunchedEffect
+                if (inicio >= l.layoutInput.text.length) return@LaunchedEffect
+                val linha = l.getLineForOffset(inicio)
+                val topo = l.getLineTop(linha).toInt()
+                val base = l.getLineBottom(linha).toInt()
+                val altura = rolagem.viewportSize
+                if (topo < rolagem.value || base > rolagem.value + altura) {
+                    rolagem.animateScrollTo((topo - altura / 4).coerceAtLeast(0))
+                }
+            }
+            Box(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rolagem)) {
+                Text(
+                    anotado,
+                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f),
+                    onTextLayout = { layout = it },
+                )
             }
             Spacer(Modifier.height(Espaco.g))
             LinearProgressIndicator(
