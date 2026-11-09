@@ -1,6 +1,8 @@
 package com.leitorvoz
 
 import android.Manifest
+import android.content.ClipboardManager
+import com.leitorvoz.leitura.Leitura
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,5 +24,20 @@ class MainActivity : ComponentActivity() {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
         setContent { TemaLeitor { TelaLeitor(vm) } }
+    }
+
+    /** Ao abrir, lê sozinho o que foi copiado, se for um texto novo. Só com foco o Android libera a área de transferência. */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) return
+        val clip = getSystemService(ClipboardManager::class.java).primaryClip ?: return
+        val texto = clip.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        if (texto.isNullOrEmpty() || texto == Leitura.texto.value) return
+        // Guarda só uma marca do texto, para não ler de novo o mesmo copiado.
+        val marca = texto.hashCode()
+        val loja = getSharedPreferences("copiado", MODE_PRIVATE)
+        if (loja.getInt("ultimo", 0) == marca) return
+        loja.edit().putInt("ultimo", marca).apply()
+        Leitura.ler(this, texto)
     }
 }
