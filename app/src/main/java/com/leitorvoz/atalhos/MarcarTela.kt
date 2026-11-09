@@ -146,51 +146,107 @@ class MarcarTela : AccessibilityService() {
     private fun dp(v: Int) = (v * resources.displayMetrics.density).roundToInt()
 }
 
-/** Camada escura com o retângulo marcado pelo dedo. */
+/**
+ * Camada escura com o retângulo marcado pelo dedo.
+ * Depois de marcar, dá para ajustar pelas alças dos cantos e das laterais, ou arrastar o retângulo.
+ * Perto da borda da tela, o retângulo encosta nela sozinho, porque começar o gesto na borda é difícil.
+ */
 @SuppressLint("ViewConstructor")
 private class AreaMarcada(contexto: Context) : View(contexto) {
-    private var ini: Pair<Float, Float>? = null
-    private var fim: Pair<Float, Float>? = null
+    private val d = contexto.resources.displayMetrics.density
+    private var r: RectF? = null
+    private var modo = 0 // 0 novo, 1 mover, ou soma de bordas: 2 esquerda, 4 topo, 8 direita, 16 base
+    private var ultimo = 0f to 0f
+    private val toque = 28 * d
+    private val ima = 24 * d
     private val escuro = Paint().apply { color = Color.parseColor("#99000000") }
     private val borda = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 3 * contexto.resources.displayMetrics.density
+        strokeWidth = 3 * d
         color = Color.parseColor("#B9C8FF")
+    }
+    private val alca = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#B9C8FF") }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        // Pede ao sistema para não tratar o arrasto nas laterais como gesto de voltar.
+        systemGestureExclusionRects = listOf(
+            android.graphics.Rect(0, 0, (40 * d).toInt(), height),
+            android.graphics.Rect(width - (40 * d).toInt(), 0, width, height),
+        )
     }
 
     /** Retângulo em coordenadas da tela, ou null para a tela inteira. */
     fun retangulo(): RectF? {
-        val r = local() ?: return null
-        if (r.width() < 40 || r.height() < 24) return null
+        val a = r ?: return null
+        if (a.width() < 40 || a.height() < 24) return null
         val pos = IntArray(2).also { getLocationOnScreen(it) }
-        r.offset(pos[0].toFloat(), pos[1].toFloat())
-        return r
+        return RectF(a).apply { offset(pos[0].toFloat(), pos[1].toFloat()) }
     }
 
-    private fun local(): RectF? {
-        val a = ini ?: return null
-        val b = fim ?: return null
-        return RectF(min(a.first, b.first), min(a.second, b.second), max(a.first, b.first), max(a.second, b.second))
+    private fun bordasTocadas(x: Float, y: Float, a: RectF): Int {
+        if (x < a.left - toque || x > a.right + toque || y < a.top - toque || y > a.bottom + toque) return 0
+        var m = 0
+        if (kotlin.math.abs(x - a.left) < toque) m = m or 2
+        if (kotlin.math.abs(x - a.right) < toque) m = m or 8
+        if (kotlin.math.abs(y - a.top) < toque) m = m or 4
+        if (kotlin.math.abs(y - a.bottom) < toque) m = m or 16
+        if (m == 0 && a.contains(x, y)) m = 1
+        return m
+    }
+
+    private fun encostar(a: RectF) {
+        if (a.left < ima) a.left = 0f
+        if (a.top < ima) a.top = 0f
+        if (width - a.right < ima) a.right = width.toFloat()
+        if (height - a.bottom < ima) a.bottom = height.toFloat()
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        val x = e.x
+        val y = e.y
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { ini = e.x to e.y; fim = ini }
-            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP -> fim = e.x to e.y
+            MotionEvent.ACTION_DOWN -> {
+                val a = r
+                modo = if (a != null && a.width() > 4) bordasTocadas(x, y, a) else 0
+                if (modo == 0) r = RectF(x, y, x, y)
+                ultimo = x to y
+                ancora = x to y
+            }
+            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP -> {
+                val a = r ?: return true
+                when (modo) {
+                    0 -> a.set(min(ancora.first, x), min(ancora.second, y), max(ancora.first, x), max(ancora.second, y))
+                    1 -> a.offset(x - ultimo.first, y - ultimo.second)
+                    else -> {
+                        if (modo and 2 != 0) a.left = min(x, a.right - toque)
+                        if (modo and 8 != 0) a.right = max(x, a.left + toque)
+                        if (modo and 4 != 0) a.top = min(y, a.bottom - toque)
+                        if (modo and 16 != 0) a.bottom = max(y, a.top + toque)
+                    }
+                }
+                encostar(a)
+                ultimo = x to y
+            }
         }
         invalidate()
         return true
     }
 
+    private var ancora = 0f to 0f
+
     override fun onDraw(canvas: Canvas) {
-        val r = local()
-        if (r == null || r.width() < 4) { canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), escuro); return }
-        canvas.drawRect(0f, 0f, width.toFloat(), r.top, escuro)
-        canvas.drawRect(0f, r.bottom, width.toFloat(), height.toFloat(), escuro)
-        canvas.drawRect(0f, r.top, r.left, r.bottom, escuro)
-        canvas.drawRect(r.right, r.top, width.toFloat(), r.bottom, escuro)
-        val raio = 8 * resources.displayMetrics.density
-        canvas.drawRoundRect(r, raio, raio, borda)
+        val a = r
+        if (a == null || a.width() < 4) { canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), escuro); return }
+        canvas.drawRect(0f, 0f, width.toFloat(), a.top, escuro)
+        canvas.drawRect(0f, a.bottom, width.toFloat(), height.toFloat(), escuro)
+        canvas.drawRect(0f, a.top, a.left, a.bottom, escuro)
+        canvas.drawRect(a.right, a.top, width.toFloat(), a.bottom, escuro)
+        canvas.drawRoundRect(a, 8 * d, 8 * d, borda)
+        val raio = 7 * d
+        listOf(a.left to a.top, a.right to a.top, a.left to a.bottom, a.right to a.bottom,
+            a.centerX() to a.top, a.centerX() to a.bottom, a.left to a.centerY(), a.right to a.centerY())
+            .forEach { (cx, cy) -> canvas.drawCircle(cx, cy, raio, alca) }
     }
 }
