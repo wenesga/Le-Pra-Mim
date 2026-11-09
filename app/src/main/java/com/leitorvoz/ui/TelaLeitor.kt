@@ -6,13 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,23 +87,15 @@ fun TelaLeitor(vm: LeitorViewModel) {
         if (t.isNullOrBlank()) escopo.launch { avisos.showSnackbar("Nenhum texto copiado") } else Leitura.ler(contexto, t)
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(avisos) }, contentWindowInsets = WindowInsets(0)) { margens ->
-        Box(Modifier.fillMaxSize().padding(margens)) {
-            Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .windowInsetsPadding(WindowInsets.safeDrawing).padding(Espaco.gg),
-                verticalArrangement = Arrangement.spacedBy(Espaco.gg),
-            ) {
-                Text("Leitor Voz", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = Espaco.m, start = Espaco.p))
-                CartaoLeitura(colar)
-                CartaoVoz(vm)
-                CartaoAtalhos()
-            }
-            // Faixa atrás da barra do relógio, para o texto rolado não se misturar com ela.
-            Spacer(
-                Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars)
-                    .background(MaterialTheme.colorScheme.background),
-            )
+    Scaffold(snackbarHost = { SnackbarHost(avisos) }) { margens ->
+        Column(
+            Modifier.fillMaxSize().padding(margens).verticalScroll(rememberScrollState()).padding(Espaco.gg),
+            verticalArrangement = Arrangement.spacedBy(Espaco.gg),
+        ) {
+            Text("Leitor Voz", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = Espaco.m, start = Espaco.p))
+            CartaoLeitura(colar)
+            CartaoVoz(vm)
+            CartaoAtalhos()
         }
     }
 }
