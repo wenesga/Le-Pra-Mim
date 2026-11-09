@@ -1,12 +1,9 @@
 package com.leitorvoz.ui
 
-import android.app.StatusBarManager
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Icon
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +28,6 @@ import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
 import androidx.compose.material.icons.outlined.Stop
-import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,8 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.leitorvoz.R
-import com.leitorvoz.atalhos.BotaoRapido
 import com.leitorvoz.atalhos.MarcarTela
 import com.leitorvoz.leitura.Leitura
 import com.leitorvoz.leitura.Situacao
@@ -100,7 +94,7 @@ fun TelaLeitor(vm: LeitorViewModel) {
             Text("Leitor Voz", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = Espaco.m, start = Espaco.p))
             CartaoLeitura(colar)
             CartaoVoz(vm)
-            CartaoAtalhos { escopo.launch { avisos.showSnackbar(it) } }
+            CartaoAtalhos()
         }
     }
 }
@@ -247,7 +241,7 @@ private fun acessibilidadeLigada(c: Context): Boolean {
 }
 
 @Composable
-private fun CartaoAtalhos(avisar: (String) -> Unit) {
+private fun CartaoAtalhos() {
     val contexto = LocalContext.current
     var ligada by remember { mutableStateOf(acessibilidadeLigada(contexto)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { ligada = acessibilidadeLigada(contexto) }
@@ -265,23 +259,6 @@ private fun CartaoAtalhos(avisar: (String) -> Unit) {
                     TextButton(onClick = {
                         contexto.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     }) { Text(if (ligada) "Alterar" else "Ativar") }
-                },
-            )
-            if (Build.VERSION.SDK_INT >= 33) ListItem(
-                colors = cores,
-                leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null) },
-                headlineContent = { Text("Botão rápido") },
-                supportingContent = { Text("Lê o texto copiado") },
-                trailingContent = {
-                    TextButton(onClick = {
-                        contexto.getSystemService(StatusBarManager::class.java).requestAddTileService(
-                            ComponentName(contexto, BotaoRapido::class.java), contexto.getString(R.string.acao_ler),
-                            Icon.createWithResource(contexto, R.drawable.ic_ler), contexto.mainExecutor,
-                        ) { r ->
-                            if (r == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) avisar("O botão já está nas configurações rápidas")
-                            else if (r == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED) avisar("Botão adicionado")
-                        }
-                    }) { Text("Adicionar") }
                 },
             )
         }
