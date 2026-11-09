@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
-import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -186,9 +185,6 @@ private fun CartaoLeitura(colar: () -> Unit) {
                 }
                 IconButton(onClick = { Leitura.comando(contexto, Leitura.ACAO_AVANCAR) }) {
                     Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar")
-                }
-                IconButton(onClick = { Leitura.comando(contexto, Leitura.ACAO_PARAR) }, enabled = situacao != Situacao.PARADO) {
-                    Icon(Icons.Outlined.Stop, contentDescription = "Parar")
                 }
             }
         }
