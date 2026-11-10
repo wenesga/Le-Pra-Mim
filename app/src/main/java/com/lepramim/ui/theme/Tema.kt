@@ -15,18 +15,18 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 private val Escuro = darkColorScheme(
-    primary = Color(0xFFB9C8FF), onPrimary = Color(0xFF0F1D4A),
-    primaryContainer = Color(0xFF2A3F86), onPrimaryContainer = Color(0xFFDBE2FF),
-    secondaryContainer = Color(0xFF2A3F86), onSecondaryContainer = Color(0xFFDBE2FF),
+    primary = Color(0xFF5EE0A8), onPrimary = Color(0xFF00391F),
+    primaryContainer = Color(0xFF1F5A40), onPrimaryContainer = Color(0xFFCDF5E1),
+    secondaryContainer = Color(0xFF1F5A40), onSecondaryContainer = Color(0xFFCDF5E1),
     background = Color(0xFF0F1115), surface = Color(0xFF0F1115),
     surfaceContainerLow = Color(0xFF15181D), surfaceContainer = Color(0xFF181B21),
     surfaceContainerHigh = Color(0xFF1F232A), surfaceContainerHighest = Color(0xFF292D35),
 )
 
 private val Claro = lightColorScheme(
-    primary = Color(0xFF2F5BD3), onPrimary = Color.White,
-    primaryContainer = Color(0xFFDBE2FF), onPrimaryContainer = Color(0xFF0C2A7A),
-    secondaryContainer = Color(0xFFDBE2FF), onSecondaryContainer = Color(0xFF0C2A7A),
+    primary = Color(0xFF1B7F57), onPrimary = Color.White,
+    primaryContainer = Color(0xFFBDF2D8), onPrimaryContainer = Color(0xFF05392A),
+    secondaryContainer = Color(0xFFBDF2D8), onSecondaryContainer = Color(0xFF05392A),
 )
 
 private val Formas = Shapes(

@@ -123,7 +123,7 @@ private fun CartaoLeitura(colar: () -> Unit) {
                 Text("Nenhum texto", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(Espaco.gg))
                 OutlinedButton(onClick = colar) {
-                    Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.size(Espaco.m))
                     Text("Colar")
                 }
@@ -137,9 +137,9 @@ private fun CartaoLeitura(colar: () -> Unit) {
                     style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { Leitura.copiarTexto(contexto) }) { Icon(Icons.Outlined.ContentCopy, contentDescription = "Copiar") }
-                IconButton(onClick = colar) { Icon(Icons.Outlined.ContentPaste, contentDescription = "Colar") }
-                IconButton(onClick = { Leitura.limpar(contexto) }) { Icon(Icons.Outlined.Delete, contentDescription = "Limpar") }
+                IconButton(onClick = { Leitura.copiarTexto(contexto) }) { Icon(Icons.Outlined.ContentCopy, contentDescription = "Copiar", tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = colar) { Icon(Icons.Outlined.ContentPaste, contentDescription = "Colar", tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = { Leitura.limpar(contexto) }) { Icon(Icons.Outlined.Delete, contentDescription = "Limpar", tint = MaterialTheme.colorScheme.primary) }
             }
             val r = trecho
             val anotado = buildAnnotatedString {
@@ -185,7 +185,7 @@ private fun CartaoLeitura(colar: () -> Unit) {
             Spacer(Modifier.height(Espaco.g))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { Leitura.comando(contexto, Leitura.ACAO_VOLTAR) }) {
-                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar")
+                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.primary)
                 }
                 FilledIconButton(
                     onClick = {
@@ -197,7 +197,7 @@ private fun CartaoLeitura(colar: () -> Unit) {
                     else Icon(Icons.Outlined.PlayArrow, contentDescription = "Ler", modifier = Modifier.size(32.dp))
                 }
                 IconButton(onClick = { Leitura.comando(contexto, Leitura.ACAO_AVANCAR) }) {
-                    Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar")
+                    Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -221,7 +221,7 @@ private fun CartaoVoz(vm: LeitorViewModel) {
                     Text("Voz", style = MaterialTheme.typography.titleMedium)
                     if (!aberto) Text(resumo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(if (aberto) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = if (aberto) "Recolher" else "Expandir")
+                Icon(if (aberto) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = if (aberto) "Recolher" else "Expandir", tint = MaterialTheme.colorScheme.primary)
             }
             if (!aberto) return@Column
             Seletor(
@@ -299,12 +299,12 @@ private fun CartaoAtalhos() {
                     if (!aberto) Text("Marcar na tela: " + if (ligada) "ligado" else "desligado",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(if (aberto) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = if (aberto) "Recolher" else "Expandir")
+                Icon(if (aberto) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = if (aberto) "Recolher" else "Expandir", tint = MaterialTheme.colorScheme.primary)
             }
             if (!aberto) return@Column
             ListItem(
                 colors = cores,
-                leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null) },
+                leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 headlineContent = { Text("Marcar na tela") },
                 supportingContent = { Text(if (ligada) "Ligado" else "Desligado") },
                 trailingContent = {
@@ -315,7 +315,7 @@ private fun CartaoAtalhos() {
             )
             ListItem(
                 colors = cores,
-                leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null) },
+                leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 headlineContent = { Text("Botão Ler") },
                 supportingContent = { Text("Para ler o texto copiado: puxe a Central de Controle, toque em Editar e arraste o botão Ler.") },
             )
