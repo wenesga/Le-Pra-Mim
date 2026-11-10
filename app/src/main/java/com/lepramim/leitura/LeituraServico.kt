@@ -228,13 +228,25 @@ class LeituraServico : Service() {
     }
 
     private var sessao: MediaSession? = null
+    private val semCapa = android.os.Build.MANUFACTURER.equals("nubia", ignoreCase = true)
 
-    /** Capa do player: alto-falante menta sobre grafite, as cores do app. */
+    /**
+     * Capa do player: alto-falante menta sobre grafite. No Red Magic o player estica a capa no cartão todo,
+     * então lá ela é só um fundo verde liso.
+     */
     private val capa by lazy {
         val b = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
         val c = Canvas(b)
-        c.drawColor(0xFF44484F.toInt())
-        getDrawable(R.drawable.ic_ler)!!.mutate().apply { setTint(0xFF5EE0A8.toInt()); setBounds(112, 112, 400, 400); draw(c) }
+        if (semCapa) {
+            // Degradê verde-acinzentado, como o cartão do Poco: mais claro no centro, mais escuro nas bordas.
+            val pincel = android.graphics.Paint().apply {
+                shader = android.graphics.RadialGradient(200f, 210f, 420f, intArrayOf(0xFF3E726D.toInt(), 0xFF33504E.toInt()), null, android.graphics.Shader.TileMode.CLAMP)
+            }
+            c.drawRect(0f, 0f, 512f, 512f, pincel)
+        } else {
+            c.drawColor(0xFF44484F.toInt())
+            getDrawable(R.drawable.ic_ler)!!.mutate().apply { setTint(0xFF5EE0A8.toInt()); setBounds(112, 112, 400, 400); draw(c) }
+        }
         b
     }
 
@@ -259,8 +271,10 @@ class LeituraServico : Service() {
         val cps = Leitura._cps.value
         val total = (Leitura._texto.value.length / cps * 1000).toLong()
         val posicao = ((Leitura._trecho.value?.first ?: 0) / cps * 1000).toLong()
-        s.setMetadata(MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE, "Lê Pra Mim").putLong(MediaMetadata.METADATA_KEY_DURATION, total)
-            .putBitmap(MediaMetadata.METADATA_KEY_ART, capa).putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, capa).build())
+        val meta = MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE, "Lê Pra Mim").putLong(MediaMetadata.METADATA_KEY_DURATION, total)
+
+        meta.putBitmap(MediaMetadata.METADATA_KEY_ART, capa).putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, capa)
+        s.setMetadata(meta.build())
         s.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or
