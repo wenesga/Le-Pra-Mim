@@ -1,6 +1,6 @@
 package com.lepramim.ui
 
-import android.content.ClipboardManager
+
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -22,7 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.AccessibilityNew
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.SkipNext
@@ -81,8 +87,7 @@ fun TelaLeitor(vm: LeitorViewModel) {
     val avisos = remember { SnackbarHostState() }
     val escopo = rememberCoroutineScope()
     val colar: () -> Unit = {
-        val clip = contexto.getSystemService(ClipboardManager::class.java).primaryClip
-        val t = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(contexto)?.toString()
+        val t = Leitura.copiado(contexto)
         if (t.isNullOrBlank()) escopo.launch { avisos.showSnackbar("Nenhum texto copiado") } else Leitura.ler(contexto, t)
     }
 
@@ -105,6 +110,7 @@ private fun CartaoLeitura(colar: () -> Unit) {
     val texto by Leitura.texto.collectAsStateWithLifecycle()
     val trecho by Leitura.trecho.collectAsStateWithLifecycle()
     val situacao by Leitura.situacao.collectAsStateWithLifecycle()
+    val cps by Leitura.cps.collectAsStateWithLifecycle()
     val destaque = MaterialTheme.colorScheme.primaryContainer
     val noDestaque = MaterialTheme.colorScheme.onPrimaryContainer
 
@@ -131,7 +137,9 @@ private fun CartaoLeitura(colar: () -> Unit) {
                     style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = { Leitura.copiarTexto(contexto) }) { Icon(Icons.Outlined.ContentCopy, contentDescription = "Copiar") }
                 IconButton(onClick = colar) { Icon(Icons.Outlined.ContentPaste, contentDescription = "Colar") }
+                IconButton(onClick = { Leitura.limpar(contexto) }) { Icon(Icons.Outlined.Delete, contentDescription = "Limpar") }
             }
             val r = trecho
             val anotado = buildAnnotatedString {
@@ -169,6 +177,11 @@ private fun CartaoLeitura(colar: () -> Unit) {
                 progress = { if (r == null || texto.isEmpty()) 0f else (r.first.toFloat() / texto.length).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text(
+                Leitura.tempoTexto(r?.first ?: 0, texto.length, cps),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Espaco.p),
+            )
             Spacer(Modifier.height(Espaco.g))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { Leitura.comando(contexto, Leitura.ACAO_VOLTAR) }) {
@@ -198,9 +211,19 @@ private fun CartaoVoz(vm: LeitorViewModel) {
     val motores by vm.motores.collectAsStateWithLifecycle()
     val vozes by vm.vozes.collectAsStateWithLifecycle()
 
-    Card(shape = MaterialTheme.shapes.large) {
-        Column(Modifier.fillMaxWidth().padding(Espaco.gg), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
-            Text("Voz", style = MaterialTheme.typography.titleMedium)
+    var aberto by rememberSaveable { mutableStateOf(false) }
+    val resumo = (vozes.find { it.id == prefs.voz }?.nome ?: "Padrão") + " · " + String.format(Locale("pt", "BR"), "%.1fx", prefs.velocidade)
+
+    Card(onClick = { aberto = !aberto }, shape = MaterialTheme.shapes.large) {
+        Column(Modifier.animateContentSize().fillMaxWidth().padding(Espaco.gg), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Voz", style = MaterialTheme.typography.titleMedium)
+                    if (!aberto) Text(resumo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(if (aberto) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = if (aberto) "Recolher" else "Expandir")
+            }
+            if (!aberto) return@Column
             Seletor(
                 rotulo = "Motor",
                 valor = motores.find { it.pacote == prefs.motor }?.nome ?: "Padrão do sistema",
@@ -263,9 +286,22 @@ private fun CartaoAtalhos() {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { ligada = acessibilidadeLigada(contexto) }
     val cores = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0f))
 
-    Card(shape = MaterialTheme.shapes.large) {
-        Column(Modifier.fillMaxWidth().padding(vertical = Espaco.m)) {
-            Text("Atalhos", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = Espaco.gg, vertical = Espaco.p))
+    var aberto by rememberSaveable { mutableStateOf(false) }
+
+    Card(onClick = { aberto = !aberto }, shape = MaterialTheme.shapes.large) {
+        Column(Modifier.animateContentSize().fillMaxWidth().padding(vertical = Espaco.m)) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = Espaco.gg, vertical = Espaco.p),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Atalhos", style = MaterialTheme.typography.titleMedium)
+                    if (!aberto) Text("Marcar na tela: " + if (ligada) "ligado" else "desligado",
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(if (aberto) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = if (aberto) "Recolher" else "Expandir")
+            }
+            if (!aberto) return@Column
             ListItem(
                 colors = cores,
                 leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null) },
@@ -276,6 +312,12 @@ private fun CartaoAtalhos() {
                         contexto.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     }) { Text(if (ligada) "Alterar" else "Ativar") }
                 },
+            )
+            ListItem(
+                colors = cores,
+                leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null) },
+                headlineContent = { Text("Botão Ler") },
+                supportingContent = { Text("Para ler o texto copiado: puxe a Central de Controle, toque em Editar e arraste o botão Ler.") },
             )
         }
     }

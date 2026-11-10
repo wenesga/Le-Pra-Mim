@@ -1,5 +1,7 @@
 package com.lepramim.leitura
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +18,21 @@ object Leitura {
     val trecho: StateFlow<IntRange?> = _trecho
     val situacao: StateFlow<Situacao> = _situacao
 
+    /** Quando a leitura atual começou; serve para saber se o copiado é mais novo. */
+    @Volatile var inicio = 0L
+
+    /** Caracteres lidos por segundo, estimado pela velocidade e corrigido pelo tempo real das frases. */
+    internal val _cps = MutableStateFlow(14f)
+    val cps: StateFlow<Float> = _cps
+
+    fun tempoTexto(posicao: Int, total: Int, cps: Float): String {
+        if (total <= 0 || cps <= 0f) return ""
+        fun fmt(s: Float) = "%d:%02d".format(s.toInt() / 60, s.toInt() % 60)
+        return fmt(posicao / cps) + " / " + fmt(total / cps)
+    }
+
+    fun tempoTexto() = tempoTexto(_trecho.value?.first ?: 0, _texto.value.length, _cps.value)
+
     const val ACAO_LER = "ler"
     const val ACAO_PAUSAR = "pausar"
     const val ACAO_CONTINUAR = "continuar"
@@ -24,10 +41,47 @@ object Leitura {
     const val ACAO_PARAR = "parar"
     const val EXTRA_TEXTO = "texto"
 
+    /** Chamada para o link no fim do texto, como o "Veja mais em" do copia e cola dos sites. */
+    private val chamadaFinal = Regex(
+        // A: depois de traço, reticências ou quebra de linha, uma frase curta e o link. B: frase que começa com palavra de chamada.
+        "\\s*(?:(?:[-–—…\\n]|\\.{3})\\s*(?:[^\\s.:/]+\\s+){0,5}[^\\s.:/]+\\s*:?" +
+            "|[-–—]?\\s*(?:veja|leia|saiba|acesse|confira|continue|clique|baixe|assista|acompanhe|siga|compartilhe|fonte|link|" +
+            "texto completo|matéria completa|reportagem completa|mais informações|originalmente)(?:\\s+[^\\s.:/]+){0,4}\\s*:?)" +
+            "\\s*https?://\\S+\\s*$",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** Tira só o link do fim com chamada; links no meio do texto ficam. */
+    fun semChamadaFinal(texto: String) = texto.replace(chamadaFinal, "")
+
     fun ler(c: Context, texto: String) {
-        val limpo = texto.trim()
+        val limpo = semChamadaFinal(texto).trim()
         if (limpo.isEmpty()) return
+        inicio = System.currentTimeMillis()
         c.startForegroundService(Intent(c, LeituraServico::class.java).setAction(ACAO_LER).putExtra(EXTRA_TEXTO, limpo))
+    }
+
+    /** Texto copiado, ou null se vazio ou marcado como sensível (senha de gerenciador de senhas). */
+    fun copiado(c: Context): String? {
+        val clip = c.getSystemService(ClipboardManager::class.java).primaryClip ?: return null
+        if (clip.itemCount == 0) return null
+        if (clip.description.extras?.getBoolean("android.content.extra.IS_SENSITIVE", false) == true) return null
+        return clip.getItemAt(0).coerceToText(c)?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    /** Hora em que o copiado foi feito, ou 0. */
+    fun horaDoCopiado(c: Context): Long =
+        c.getSystemService(ClipboardManager::class.java).primaryClip?.description?.timestamp ?: 0L
+
+    fun copiarTexto(c: Context) {
+        if (_texto.value.isEmpty()) return
+        c.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Lê Pra Mim", _texto.value))
+    }
+
+    fun limpar(c: Context) {
+        if (_situacao.value != Situacao.PARADO) comando(c, ACAO_PARAR)
+        _texto.value = ""
+        _trecho.value = null
     }
 
     fun comando(c: Context, acao: String) {

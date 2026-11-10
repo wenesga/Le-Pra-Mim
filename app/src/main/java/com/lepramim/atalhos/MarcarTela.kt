@@ -158,7 +158,7 @@ private class AreaMarcada(contexto: Context) : View(contexto) {
     private var modo = 0 // 0 novo, 1 mover, ou soma de bordas: 2 esquerda, 4 topo, 8 direita, 16 base
     private var ultimo = 0f to 0f
     private val toque = 28 * d
-    private val ima = 24 * d
+    private val ima = 12 * d
     private val escuro = Paint().apply { color = Color.parseColor("#99000000") }
     private val borda = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE

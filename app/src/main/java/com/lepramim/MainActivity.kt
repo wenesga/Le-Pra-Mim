@@ -30,8 +30,7 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus) return
-        val clip = getSystemService(ClipboardManager::class.java).primaryClip ?: return
-        val texto = clip.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        val texto = Leitura.copiado(this)
         if (texto.isNullOrEmpty() || texto == Leitura.texto.value) return
         // Guarda só uma marca do texto, para não ler de novo o mesmo copiado.
         val marca = texto.hashCode()

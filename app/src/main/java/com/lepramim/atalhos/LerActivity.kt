@@ -30,9 +30,11 @@ class LerActivity : Activity() {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus || !esperandoFoco) return
         esperandoFoco = false
-        val clip = getSystemService(ClipboardManager::class.java).primaryClip
-        val texto = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
-        if (!texto.isNullOrEmpty() && texto == Leitura.texto.value && Leitura.situacao.value != Situacao.PARADO) {
+        val texto = Leitura.copiado(this)
+        // Lendo texto que não veio da área de transferência (marcar na tela): o toque também para.
+        val lendo = Leitura.situacao.value != Situacao.PARADO
+        val copiadoDepois = Leitura.horaDoCopiado(this) > Leitura.inicio
+        if (lendo && (texto.isNullOrEmpty() || texto == Leitura.texto.value || !copiadoDepois)) {
             Leitura.comando(this, Leitura.ACAO_PARAR)
             finish()
             return
