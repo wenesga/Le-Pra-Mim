@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -69,6 +71,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -118,9 +122,35 @@ private fun CartaoLeitura(colar: () -> Unit) {
     val cps by Leitura.cps.collectAsStateWithLifecycle()
     val destaque = MaterialTheme.colorScheme.primaryContainer
     val noDestaque = MaterialTheme.colorScheme.onPrimaryContainer
+    var editando by rememberSaveable { mutableStateOf(false) }
+    var rascunho by rememberSaveable { mutableStateOf("") }
+    val foco = remember { FocusRequester() }
+    LaunchedEffect(editando) { if (editando) foco.requestFocus() }
+    val editar = {
+        // A leitura para enquanto o texto é editado.
+        if (situacao == Situacao.TOCANDO) Leitura.comando(contexto, Leitura.ACAO_PAUSAR)
+        rascunho = texto
+        editando = true
+    }
 
     Card(shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 6.dp)) {
         Box(Modifier.animateContentSize()) {
+        if (editando) {
+            Column(Modifier.fillMaxWidth().padding(Espaco.gg), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
+                Text("Editar", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(
+                    value = rascunho, onValueChange = { rascunho = it },
+                    placeholder = { Text("Digite ou cole o texto") },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 360.dp).focusRequester(foco),
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { editando = false }) { Text("Cancelar") }
+                    Spacer(Modifier.size(Espaco.m))
+                    Button(onClick = { editando = false; Leitura.ler(contexto, rascunho) }, enabled = rascunho.isNotBlank()) { Text("Ler") }
+                }
+            }
+            return@Card
+        }
         if (texto.isEmpty()) {
             Column(Modifier.fillMaxWidth().padding(Espaco.xg), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, modifier = Modifier.size(40.dp),
@@ -128,10 +158,17 @@ private fun CartaoLeitura(colar: () -> Unit) {
                 Spacer(Modifier.height(Espaco.m))
                 Text("Nenhum texto", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(Espaco.gg))
-                OutlinedButton(onClick = colar) {
-                    Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.size(Espaco.m))
-                    Text("Colar")
+                Row(horizontalArrangement = Arrangement.spacedBy(Espaco.m)) {
+                    OutlinedButton(onClick = colar) {
+                        Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.size(Espaco.m))
+                        Text("Colar")
+                    }
+                    OutlinedButton(onClick = editar) {
+                        Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.size(Espaco.m))
+                        Text("Editar")
+                    }
                 }
             }
             return@Card
@@ -143,6 +180,7 @@ private fun CartaoLeitura(colar: () -> Unit) {
                     style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = editar) { Icon(Icons.Outlined.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary) }
                 IconButton(onClick = { Leitura.copiarTexto(contexto) }) { Icon(Icons.Outlined.ContentCopy, contentDescription = "Copiar", tint = MaterialTheme.colorScheme.primary) }
                 IconButton(onClick = colar) { Icon(Icons.Outlined.ContentPaste, contentDescription = "Colar", tint = MaterialTheme.colorScheme.primary) }
                 IconButton(onClick = { Leitura.limpar(contexto) }) { Icon(Icons.Outlined.Delete, contentDescription = "Limpar", tint = MaterialTheme.colorScheme.primary) }
