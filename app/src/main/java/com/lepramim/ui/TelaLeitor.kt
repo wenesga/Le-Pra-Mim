@@ -7,6 +7,8 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
@@ -34,6 +37,7 @@ import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -42,7 +46,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +53,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -104,6 +108,7 @@ fun TelaLeitor(vm: LeitorViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CartaoLeitura(colar: () -> Unit) {
     val contexto = LocalContext.current
@@ -114,7 +119,8 @@ private fun CartaoLeitura(colar: () -> Unit) {
     val destaque = MaterialTheme.colorScheme.primaryContainer
     val noDestaque = MaterialTheme.colorScheme.onPrimaryContainer
 
-    Card(shape = MaterialTheme.shapes.large, modifier = Modifier.animateContentSize()) {
+    Card(shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 6.dp)) {
+        Box(Modifier.animateContentSize()) {
         if (texto.isEmpty()) {
             Column(Modifier.fillMaxWidth().padding(Espaco.xg), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, modifier = Modifier.size(40.dp),
@@ -166,21 +172,49 @@ private fun CartaoLeitura(colar: () -> Unit) {
                 }
             }
             Box(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rolagem)) {
+                SelectionContainer {
                 Text(
                     anotado,
                     style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f),
                     onTextLayout = { layout = it },
                 )
+                }
             }
             Spacer(Modifier.height(Espaco.g))
-            LinearProgressIndicator(
-                progress = { if (r == null || texto.isEmpty()) 0f else (r.first.toFloat() / texto.length).coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth(),
+            var arrastando by remember { mutableStateOf<Float?>(null) }
+            val fracao = if (r == null || texto.isEmpty()) 0f else (r.first.toFloat() / texto.length).coerceIn(0f, 1f)
+            Slider(
+                value = arrastando ?: fracao,
+                onValueChange = { arrastando = it },
+                onValueChangeFinished = {
+                    arrastando?.let { Leitura.ir(contexto, (it * texto.length).toInt()) }
+                    arrastando = null
+                },
+                enabled = situacao != Situacao.PARADO,
+                thumb = { Box(Modifier.size(20.dp).background(MaterialTheme.colorScheme.primary, CircleShape)) },
+                track = { estado ->
+                    SliderDefaults.Track(
+                        sliderState = estado, thumbTrackGapSize = 0.dp, trackInsideCornerSize = 0.dp,
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                            disabledActiveTrackColor = MaterialTheme.colorScheme.primary,
+                            disabledInactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                        ),
+                    )
+                },
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                    disabledThumbColor = MaterialTheme.colorScheme.primary,
+                    disabledActiveTrackColor = MaterialTheme.colorScheme.primary,
+                    disabledInactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                ),
             )
             Text(
-                Leitura.tempoTexto(r?.first ?: 0, texto.length, cps),
+                Leitura.tempoTexto(arrastando?.let { (it * texto.length).toInt() } ?: (r?.first ?: 0), texto.length, cps),
                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = Espaco.p),
             )
             Spacer(Modifier.height(Espaco.g))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
@@ -201,6 +235,7 @@ private fun CartaoLeitura(colar: () -> Unit) {
                 }
             }
         }
+        }
     }
 }
 
@@ -214,7 +249,7 @@ private fun CartaoVoz(vm: LeitorViewModel) {
     var aberto by rememberSaveable { mutableStateOf(false) }
     val resumo = (vozes.find { it.id == prefs.voz }?.nome ?: "Padrão") + " · " + String.format(Locale("pt", "BR"), "%.1fx", prefs.velocidade)
 
-    Card(onClick = { aberto = !aberto }, shape = MaterialTheme.shapes.large) {
+    Card(onClick = { aberto = !aberto }, shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 6.dp)) {
         Column(Modifier.animateContentSize().fillMaxWidth().padding(Espaco.gg), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -288,7 +323,7 @@ private fun CartaoAtalhos() {
 
     var aberto by rememberSaveable { mutableStateOf(false) }
 
-    Card(onClick = { aberto = !aberto }, shape = MaterialTheme.shapes.large) {
+    Card(onClick = { aberto = !aberto }, shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 6.dp)) {
         Column(Modifier.animateContentSize().fillMaxWidth().padding(vertical = Espaco.m)) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Espaco.gg, vertical = Espaco.p),

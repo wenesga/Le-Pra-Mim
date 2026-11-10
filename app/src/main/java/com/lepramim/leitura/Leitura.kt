@@ -39,6 +39,8 @@ object Leitura {
     const val ACAO_VOLTAR = "voltar"
     const val ACAO_AVANCAR = "avancar"
     const val ACAO_PARAR = "parar"
+    const val ACAO_IR = "ir"
+    const val EXTRA_POSICAO = "posicao"
     const val EXTRA_TEXTO = "texto"
 
     /** Chamada para o link no fim do texto, como o "Veja mais em" do copia e cola dos sites. */
@@ -82,6 +84,12 @@ object Leitura {
         if (_situacao.value != Situacao.PARADO) comando(c, ACAO_PARAR)
         _texto.value = ""
         _trecho.value = null
+    }
+
+    /** Pula para a frase que contém a posição (em caracteres) do texto. */
+    fun ir(c: Context, posicao: Int) {
+        if (_situacao.value == Situacao.PARADO) return
+        c.startService(Intent(c, LeituraServico::class.java).setAction(ACAO_IR).putExtra(EXTRA_POSICAO, posicao))
     }
 
     fun comando(c: Context, acao: String) {

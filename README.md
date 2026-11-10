@@ -13,7 +13,7 @@ Textos copiados de gerenciadores de senhas (marcados como sensíveis pelo Androi
 
 ## Durante a leitura
 
-- O cartão do app mostra o texto com o trecho lido destacado, a barra de progresso e o tempo (decorrido e total, estimado), com Copiar, Colar e Limpar.
+- O cartão do app mostra o texto com o trecho lido destacado, uma barra que se arrasta para avançar ou voltar, e o tempo (decorrido e total, estimado), com Copiar, Colar e Limpar. Com a leitura pausada, dá para selecionar e copiar só um trecho do texto.
 - A leitura continua em segundo plano, num player na notificação com Voltar, Pausar e Avançar, barra de progresso e tempo.
 
 ## Ajustes

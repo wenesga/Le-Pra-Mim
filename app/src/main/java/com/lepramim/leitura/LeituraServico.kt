@@ -87,6 +87,14 @@ class LeituraServico : Service() {
                     prepararMotor { falar() }
                 }
             }
+            Leitura.ACAO_IR -> {
+                val pos = intent.getIntExtra(Leitura.EXTRA_POSICAO, 0)
+                if (frases.isNotEmpty()) {
+                    atual = frases.indexOfLast { it.first <= pos }.coerceAtLeast(0)
+                    Leitura._trecho.value = frases[atual]
+                    if (Leitura._situacao.value == Situacao.TOCANDO) falar() else mostrar()
+                }
+            }
             Leitura.ACAO_VOLTAR -> pular(-1)
             Leitura.ACAO_AVANCAR -> pular(1)
             Leitura.ACAO_PARAR -> encerrar()
@@ -240,6 +248,10 @@ class LeituraServico : Service() {
                 override fun onSkipToNext() = Leitura.comando(this@LeituraServico, Leitura.ACAO_AVANCAR)
                 override fun onSkipToPrevious() = Leitura.comando(this@LeituraServico, Leitura.ACAO_VOLTAR)
                 override fun onStop() = Leitura.comando(this@LeituraServico, Leitura.ACAO_PARAR)
+                override fun onSeekTo(pos: Long) {
+                    val total = Leitura._texto.value.length
+                    Leitura.ir(this@LeituraServico, (pos / 1000f * Leitura._cps.value).toInt().coerceIn(0, total))
+                }
             })
             nova.isActive = true
             sessao = nova
@@ -252,7 +264,7 @@ class LeituraServico : Service() {
         s.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or
-                    PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or PlaybackState.ACTION_STOP)
+                    PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or PlaybackState.ACTION_STOP or PlaybackState.ACTION_SEEK_TO)
                 .setState(if (tocando) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED, posicao, if (tocando) 1f else 0f)
                 .build(),
         )
