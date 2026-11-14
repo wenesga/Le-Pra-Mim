@@ -106,6 +106,8 @@ class LeituraServico : Service() {
             }
             Leitura.ACAO_RECARREGAR -> if (Leitura._situacao.value == Situacao.TOCANDO) escopo.launch {
                 // Voz ou velocidade mudaram: continua da frase atual com a nova escolha.
+                tts?.stop()
+                pararAzure()
                 prefs = Repositorio(this@LeituraServico).preferencias.first()
                 prepararMotor { falar() }
             }
@@ -164,7 +166,8 @@ class LeituraServico : Service() {
 
     /** Fala da frase atual até o fim, em fila. */
     private fun falar() {
-        if (prefs.azure) { falarAzure(); return }
+        if (prefs.azure) { tts?.stop(); falarAzure(); return }
+        pararAzure()
         val t = tts ?: return
         if (!pronto || frases.isEmpty()) return
         pedirFoco()
@@ -335,7 +338,7 @@ class LeituraServico : Service() {
             c.drawRect(0f, 0f, 512f, 512f, pincel)
         } else {
             c.drawColor(0xFF44484F.toInt())
-            getDrawable(R.drawable.ic_ler)!!.mutate().apply { setTint(0xFF5EE0A8.toInt()); setBounds(112, 112, 400, 400); draw(c) }
+            android.graphics.BitmapFactory.decodeResource(resources, R.drawable.capa_logo)?.let { c.drawBitmap(it, null, android.graphics.Rect(0, 0, 512, 512), null) }
         }
         b
     }

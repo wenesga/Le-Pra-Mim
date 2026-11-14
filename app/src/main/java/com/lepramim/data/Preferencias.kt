@@ -10,6 +10,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/** Cor de destaque do app (as mesmas do Escala de Trabalho, sem o roxo). */
+enum class CorDestaque { AZUL, TURQUESA, LARANJA, VERMELHO, VERDE, CINZA }
+
 /** Escolhas de voz. Motor vazio = motor padrão do Android. */
 data class Preferencias(
     val motor: String = "",
@@ -22,6 +25,7 @@ data class Preferencias(
     val vozAzure: String = "pt-BR-FranciscaNeural",
     val caracteres: Long = 0L,
     val mes: String = "",
+    val cor: CorDestaque = CorDestaque.VERDE,
 ) {
     val azure get() = motor == MOTOR_AZURE
     companion object { const val MOTOR_AZURE = "azure" }
@@ -40,6 +44,7 @@ private object Chaves {
     val vozAzure = stringPreferencesKey("voz_azure")
     val caracteres = longPreferencesKey("caracteres")
     val mes = stringPreferencesKey("mes")
+    val cor = stringPreferencesKey("cor")
 }
 
 class Repositorio(private val contexto: Context) {
@@ -55,6 +60,7 @@ class Repositorio(private val contexto: Context) {
             vozAzure = it[Chaves.vozAzure] ?: "pt-BR-FranciscaNeural",
             caracteres = it[Chaves.caracteres] ?: 0L,
             mes = it[Chaves.mes] ?: "",
+            cor = runCatching { CorDestaque.valueOf(it[Chaves.cor] ?: "") }.getOrDefault(CorDestaque.VERDE),
         )
     }
 
@@ -62,6 +68,7 @@ class Repositorio(private val contexto: Context) {
     suspend fun definirVoz(voz: String) = contexto.loja.edit { it[Chaves.voz] = voz }
     suspend fun definirVelocidade(v: Float) = contexto.loja.edit { it[Chaves.velocidade] = v }
     suspend fun definirDestacar(d: Boolean) = contexto.loja.edit { it[Chaves.destacar] = d }
+    suspend fun definirCor(c: CorDestaque) = contexto.loja.edit { it[Chaves.cor] = c.name }
     suspend fun definirRegiao(r: String) = contexto.loja.edit { it[Chaves.regiao] = r.trim().lowercase() }
     suspend fun definirChave(c: String) = contexto.loja.edit {
         it[Chaves.chave] = c.trim()

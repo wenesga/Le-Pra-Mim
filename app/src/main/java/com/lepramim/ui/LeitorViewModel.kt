@@ -4,7 +4,12 @@ import android.app.Application
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
+import com.lepramim.data.CorDestaque
 import com.lepramim.data.Preferencias
+import com.lepramim.leitura.LeituraServico
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.lepramim.leitura.Azure
 import com.lepramim.leitura.Leitura
 import com.lepramim.leitura.ErroAzure
@@ -97,6 +102,46 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
             "Funcionando."
         } catch (e: ErroAzure) {
             Azure.mensagem(e.codigo)
+        }
+    }
+
+    fun definirCor(c: CorDestaque) = viewModelScope.launch { repo.definirCor(c) }
+
+    /** Andamento da exportação ("3 de 20"); vazio quando não há exportação em curso. */
+    private val _exportando = MutableStateFlow("")
+    val exportando: StateFlow<String> = _exportando
+    private val _aviso = MutableStateFlow<String?>(null)
+    val aviso: StateFlow<String?> = _aviso
+    fun avisoLido() { _aviso.value = null }
+
+    /** Gera o MP3 do texto, frase a frase, com a voz da Azure escolhida, e grava no arquivo escolhido. */
+    fun exportar(destino: Uri) {
+        if (_exportando.value.isNotEmpty()) return
+        val p = prefs.value
+        val texto = Leitura.texto.value
+        val frases = LeituraServico.dividir(texto)
+        viewModelScope.launch {
+            _exportando.value = "0 de ${frases.size}"
+            _aviso.value = try {
+                withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openOutputStream(destino, "wt")!!.use { saida ->
+                        frases.forEachIndexed { i, r ->
+                            val t = LeituraServico.semLinks(texto.substring(r.first, r.last + 1)).trim()
+                            if (t.isNotEmpty()) {
+                                saida.write(Azure.sintetizar(p.regiao, p.chave, p.vozAzure, p.velocidade, t))
+                                repo.somarCaracteres(t.length)
+                            }
+                            _exportando.value = "${i + 1} de ${frases.size}"
+                        }
+                    }
+                }
+                "MP3 salvo"
+            } catch (e: ErroAzure) {
+                Azure.mensagem(e.codigo)
+            } catch (e: Exception) {
+                "Não foi possível salvar o MP3"
+            }
+            _exportando.value = ""
         }
     }
 

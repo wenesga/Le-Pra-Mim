@@ -8,6 +8,17 @@ import android.provider.Settings
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Download
+import com.lepramim.data.CorDestaque
+import com.lepramim.ui.theme.amostraDe
+import com.lepramim.ui.theme.nomeDaCor
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,6 +100,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.atalhos.MarcarTela
 import com.lepramim.leitura.Leitura
+import com.lepramim.leitura.LeituraServico
 import com.lepramim.leitura.Situacao
 import com.lepramim.ui.theme.Espaco
 import kotlinx.coroutines.launch
@@ -107,6 +119,41 @@ fun TelaLeitor(vm: LeitorViewModel) {
 
     var ajustes by rememberSaveable { mutableStateOf(false) }
 
+    var confirmar by rememberSaveable { mutableStateOf(false) }
+    val prefs by vm.prefs.collectAsStateWithLifecycle()
+    val exportando by vm.exportando.collectAsStateWithLifecycle()
+    val aviso by vm.aviso.collectAsStateWithLifecycle()
+    LaunchedEffect(aviso) { aviso?.let { avisos.showSnackbar(it); vm.avisoLido() } }
+    val criarMp3 = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("audio/mpeg"),
+    ) { uri -> if (uri != null) vm.exportar(uri) }
+    val exportar: () -> Unit = {
+        if (prefs.chave.isBlank()) escopo.launch { avisos.showSnackbar("O MP3 usa a voz da Azure. Configure a chave em Ajustes.") }
+        else confirmar = true
+    }
+    if (confirmar) {
+        val texto = Leitura.texto.value
+        val cps by Leitura.cps.collectAsStateWithLifecycle()
+        val gasto = LeituraServico.semLinks(texto).trim().length.toLong()
+        val restam = (COTA_AZURE - prefs.caracteres).coerceAtLeast(0)
+        val minutos = Math.round(gasto / cps / 60f).coerceAtLeast(1)
+        val cabe = gasto <= restam
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmar = false },
+            title = { Text("Exportar MP3") },
+            text = {
+                Text(
+                    "Cerca de $minutos min de áudio, %,d caracteres.\nRestam %,d este mês.".format(Locale("pt", "BR"), gasto, restam) +
+                        if (cabe) "" else "\n\nNão cabe na cota do mês.",
+                )
+            },
+            confirmButton = {
+                TextButton(enabled = cabe && gasto > 0, onClick = { confirmar = false; criarMp3.launch("LePraMim_" + java.text.SimpleDateFormat("dd-MM-yy_HH-mm", Locale.ROOT).format(java.util.Date()) + ".mp3") }) { Text("Exportar") }
+            },
+            dismissButton = { TextButton(onClick = { confirmar = false }) { Text("Cancelar") } },
+        )
+    }
+
     Scaffold(snackbarHost = { SnackbarHost(avisos) }) { margens ->
         Column(
             Modifier.fillMaxSize().padding(margens).verticalScroll(rememberScrollState()).padding(Espaco.gg),
@@ -118,18 +165,87 @@ fun TelaLeitor(vm: LeitorViewModel) {
                     Icon(Icons.Outlined.Settings, contentDescription = "Ajustes", tint = MaterialTheme.colorScheme.primary)
                 }
             }
-            CartaoLeitura(colar)
+            CartaoLeitura(colar, exportar, exportando)
         }
     }
 
-    if (ajustes) {
-        ModalBottomSheet(onDismissRequest = { ajustes = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-            Column(
-                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Espaco.gg).padding(bottom = Espaco.gg),
-                verticalArrangement = Arrangement.spacedBy(Espaco.gg),
-            ) {
-                CartaoVoz(vm)
-                CartaoAtalhos()
+    if (ajustes) FolhaAjustes(vm) { ajustes = false }
+}
+
+/** Páginas de Ajustes, como no Escala de Trabalho: uma lista de categorias, cada uma abre a sua página. */
+private enum class Pagina(val titulo: String, val icone: androidx.compose.ui.graphics.vector.ImageVector) {
+    VOZ("Voz", Icons.AutoMirrored.Outlined.VolumeUp),
+    ATALHOS("Atalhos", Icons.Outlined.TouchApp),
+    APARENCIA("Aparência", Icons.Outlined.Palette),
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FolhaAjustes(vm: LeitorViewModel, aoFechar: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = aoFechar,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        val contexto = LocalContext.current
+        val prefs by vm.prefs.collectAsStateWithLifecycle()
+        var nome by rememberSaveable { mutableStateOf<String?>(null) }
+        val pagina = nome?.let { Pagina.valueOf(it) }
+        // Dentro de uma página, voltar leva à lista; na lista, fecha a folha.
+        androidx.activity.compose.BackHandler(enabled = pagina != null) { nome = null }
+        var ligada by remember { mutableStateOf(acessibilidadeLigada(contexto)) }
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { ligada = acessibilidadeLigada(contexto) }
+
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Espaco.gg).padding(bottom = Espaco.xg),
+            verticalArrangement = Arrangement.spacedBy(Espaco.g),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (pagina != null) IconButton(onClick = { nome = null }) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                }
+                Text(pagina?.titulo ?: "Ajustes", style = MaterialTheme.typography.headlineSmall)
+            }
+            when (pagina) {
+                null -> {
+                    val escuro = MaterialTheme.colorScheme.background.luminance() < 0.5f
+                    val corCartao = if (escuro) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Pagina.entries.forEach { p ->
+                            Card(
+                                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { nome = p.name },
+                                shape = MaterialTheme.shapes.medium,
+                                colors = CardDefaults.cardColors(containerColor = corCartao),
+                            ) {
+                                ListItem(
+                                    headlineContent = { Text(p.titulo) },
+                                    supportingContent = {
+                                        Text(when (p) {
+                                            Pagina.VOZ -> (if (prefs.azure) "Azure" else "Aparelho") + " · " + String.format(Locale("pt", "BR"), "%.1fx", prefs.velocidade)
+                                            Pagina.ATALHOS -> "Marcar na tela: " + if (ligada) "ligado" else "desligado"
+                                            Pagina.APARENCIA -> nomeDaCor(prefs.cor)
+                                        })
+                                    },
+                                    leadingContent = { Icon(p.icone, contentDescription = null) },
+                                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                )
+                            }
+                        }
+                    }
+                }
+                Pagina.VOZ -> CartaoVoz(vm)
+                Pagina.ATALHOS -> CartaoAtalhos()
+                Pagina.APARENCIA -> {
+                    Row(Modifier.fillMaxWidth().padding(vertical = Espaco.gg), horizontalArrangement = Arrangement.SpaceBetween) {
+                        CorDestaque.entries.forEach { opcao ->
+                            Box(
+                                Modifier.size(40.dp).clip(CircleShape).background(amostraDe(opcao))
+                                    .then(if (opcao == prefs.cor) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
+                                    .clickable { vm.definirCor(opcao) },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -137,7 +253,7 @@ fun TelaLeitor(vm: LeitorViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CartaoLeitura(colar: () -> Unit) {
+private fun CartaoLeitura(colar: () -> Unit, exportar: () -> Unit, exportando: String) {
     val contexto = LocalContext.current
     val texto by Leitura.texto.collectAsStateWithLifecycle()
     val trecho by Leitura.trecho.collectAsStateWithLifecycle()
@@ -176,8 +292,10 @@ private fun CartaoLeitura(colar: () -> Unit) {
         }
         if (texto.isEmpty()) {
             Column(Modifier.fillMaxWidth().padding(Espaco.xg), horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.primary)
+                androidx.compose.foundation.Image(
+                    androidx.compose.ui.res.painterResource(com.lepramim.R.drawable.banner), contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).alpha(0.15f),
+                )
                 Spacer(Modifier.height(Espaco.m))
                 Text("Nenhum texto", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(Espaco.gg))
@@ -295,6 +413,12 @@ private fun CartaoLeitura(colar: () -> Unit) {
                     Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", tint = MaterialTheme.colorScheme.primary)
                 }
             }
+            Spacer(Modifier.height(Espaco.m))
+            TextButton(onClick = exportar, enabled = exportando.isEmpty(), modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(Espaco.m))
+                Text(if (exportando.isEmpty()) "Exportar" else "Exportando $exportando")
+            }
         }
         }
     }
@@ -307,9 +431,8 @@ private fun CartaoVoz(vm: LeitorViewModel) {
     val motores by vm.motores.collectAsStateWithLifecycle()
     val vozes by vm.vozes.collectAsStateWithLifecycle()
 
-    Card(shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
-        Column(Modifier.fillMaxWidth().padding(Espaco.gg), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
-            Text("Voz", style = MaterialTheme.typography.titleMedium)
+    Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = Color.Transparent)) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
             Seletor(
                 rotulo = "Motor",
                 valor = if (prefs.azure) "Azure" else "Aparelho",
@@ -429,9 +552,8 @@ private fun CartaoAtalhos() {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { ligada = acessibilidadeLigada(contexto) }
     val cores = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0f))
 
-    Card(shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
+    Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = Color.Transparent)) {
         Column(Modifier.fillMaxWidth().padding(vertical = Espaco.m)) {
-            Text("Atalhos", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = Espaco.gg, vertical = Espaco.p))
             ListItem(
                 colors = cores,
                 leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },

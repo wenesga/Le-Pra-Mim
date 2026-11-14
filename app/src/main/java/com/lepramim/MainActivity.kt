@@ -9,6 +9,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.ui.LeitorViewModel
 import com.lepramim.ui.TelaLeitor
 import com.lepramim.ui.theme.TemaLeitor
@@ -23,7 +25,10 @@ class MainActivity : ComponentActivity() {
         if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
-        setContent { TemaLeitor { TelaLeitor(vm) } }
+        setContent {
+            val prefs by vm.prefs.collectAsStateWithLifecycle()
+            TemaLeitor(prefs.cor) { TelaLeitor(vm) }
+        }
     }
 
     /** Ao abrir, lê sozinho o que foi copiado, se for um texto novo. Só com foco o Android libera a área de transferência. */
