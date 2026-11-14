@@ -24,6 +24,14 @@ import com.lepramim.MainActivity
 import com.lepramim.R
 import com.lepramim.data.Preferencias
 import com.lepramim.data.Repositorio
+import android.media.MediaPlayer
+import android.widget.Toast
+import java.io.File
+import kotlin.coroutines.resume
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -75,6 +83,7 @@ class LeituraServico : Service() {
             }
             Leitura.ACAO_PAUSAR -> {
                 tts?.stop()
+                pararAzure()
                 Leitura._situacao.value = Situacao.PAUSADO
                 soltarFoco()
                 mostrar()
@@ -95,6 +104,11 @@ class LeituraServico : Service() {
                     if (Leitura._situacao.value == Situacao.TOCANDO) falar() else mostrar()
                 }
             }
+            Leitura.ACAO_RECARREGAR -> if (Leitura._situacao.value == Situacao.TOCANDO) escopo.launch {
+                // Voz ou velocidade mudaram: continua da frase atual com a nova escolha.
+                prefs = Repositorio(this@LeituraServico).preferencias.first()
+                prepararMotor { falar() }
+            }
             Leitura.ACAO_VOLTAR -> pular(-1)
             Leitura.ACAO_AVANCAR -> pular(1)
             Leitura.ACAO_PARAR -> encerrar()
@@ -112,6 +126,11 @@ class LeituraServico : Service() {
 
     /** Cria o motor de voz escolhido (ou reaproveita o atual) e depois fala. */
     private fun prepararMotor(depois: () -> Unit) {
+        if (prefs.azure) {
+            if (prefs.chave.isNotBlank()) { depois(); return }
+            aviso("Sem chave da Azure. Usando a voz do aparelho.")
+            prefs = prefs.copy(motor = "")
+        }
         val motor = prefs.motor
         if (tts != null && pronto && motor == motorAtual) {
             aplicarVoz()
@@ -145,6 +164,7 @@ class LeituraServico : Service() {
 
     /** Fala da frase atual até o fim, em fila. */
     private fun falar() {
+        if (prefs.azure) { falarAzure(); return }
         val t = tts ?: return
         if (!pronto || frases.isEmpty()) return
         pedirFoco()
@@ -152,8 +172,77 @@ class LeituraServico : Service() {
         for (i in atual..frases.lastIndex) {
             val r = frases[i]
             val modo = if (i == atual) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-            t.speak(texto.substring(r.first, r.last + 1), modo, Bundle(), "f$i")
+            t.speak(semLinks(texto.substring(r.first, r.last + 1)).ifBlank { "." }, modo, Bundle(), "f$i")
         }
+    }
+
+    private var jobAzure: Job? = null
+    private var proxAzure: Deferred<ByteArray>? = null
+    private var player: MediaPlayer? = null
+
+    private fun aviso(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+
+    private fun pararAzure() {
+        jobAzure?.cancel(); jobAzure = null
+        proxAzure?.cancel(); proxAzure = null
+        player?.let { runCatching { it.release() } }
+        player = null
+    }
+
+    /** Voz da Azure: busca o MP3 de cada frase e já pede o da próxima enquanto a atual toca. */
+    private fun falarAzure() {
+        if (frases.isEmpty()) return
+        pararAzure()
+        pedirFoco()
+        val texto = Leitura._texto.value
+        val p = prefs
+        val repo = Repositorio(this)
+        fun buscar(i: Int) = escopo.async(Dispatchers.IO) {
+            val r = frases[i]
+            val t = semLinks(texto.substring(r.first, r.last + 1)).trim()
+            if (t.isEmpty()) return@async ByteArray(0)
+            Azure.sintetizar(p.regiao, p.chave, p.vozAzure, p.velocidade, t).also { repo.somarCaracteres(t.length) }
+        }
+        jobAzure = escopo.launch {
+            try {
+                var i = atual
+                proxAzure = buscar(i)
+                while (i <= frases.lastIndex) {
+                    val mp3 = proxAzure!!.await()
+                    proxAzure = if (i < frases.lastIndex) buscar(i + 1) else null
+                    atual = i
+                    Leitura._trecho.value = frases[i]
+                    if (Leitura._situacao.value == Situacao.TOCANDO) mostrar()
+                    if (mp3.isNotEmpty()) tocar(mp3, frases[i].last - frases[i].first + 1)
+                    i++
+                }
+                encerrar()
+            } catch (e: ErroAzure) {
+                aviso(Azure.mensagem(e.codigo) + " Usando a voz do aparelho.")
+                prefs = prefs.copy(motor = "")
+                prepararMotor { falar() }
+            }
+        }
+    }
+
+    private suspend fun tocar(mp3: ByteArray, tamanho: Int) = suspendCancellableCoroutine<Unit> { k ->
+        val arq = File.createTempFile("fala", ".mp3", cacheDir).apply { writeBytes(mp3) }
+        val mp = MediaPlayer().apply { setAudioAttributes(atributos); setDataSource(arq.path); prepare() }
+        player = mp
+        val ms = mp.duration
+        if (ms > 400 && tamanho > 8) {
+            Leitura._cps.value = (Leitura._cps.value * 0.5f + tamanho * 1000f / ms * 0.5f).coerceIn(5f, 60f)
+        }
+        fun fim() {
+            runCatching { mp.release() }
+            if (player === mp) player = null
+            arq.delete()
+            if (k.isActive) k.resume(Unit)
+        }
+        mp.setOnCompletionListener { fim() }
+        mp.setOnErrorListener { _, _, _ -> fim(); true }
+        k.invokeOnCancellation { runCatching { mp.release() }; arq.delete() }
+        mp.start()
     }
 
     private inner class Progresso : UtteranceProgressListener() {
@@ -206,6 +295,7 @@ class LeituraServico : Service() {
 
     private fun encerrar() {
         tts?.stop()
+        pararAzure()
         soltarFoco()
         Leitura._situacao.value = Situacao.PARADO
         Leitura._trecho.value = null
@@ -326,6 +416,7 @@ class LeituraServico : Service() {
     }
 
     override fun onDestroy() {
+        pararAzure()
         sessao?.release()
         sessao = null
         tts?.shutdown()
@@ -339,6 +430,11 @@ class LeituraServico : Service() {
         /** true: notificação de mídia do sistema; false: a versão própria com play grande. */
         private const val MIDIA = true
         private const val LIMITE = 3500
+        /** Regra de links do Balabolka: o que ela pega não é lido. */
+        private val LINK = Regex("""((http|ftp|https)://)?(www\.)?([-a-zA-Z0-9@:%._\+~#\=]{2,256}\.[a-z]{2,6}\b)([-a-zA-Z0-9@:%_\+.~#?&//\=]*)""")
+
+        /** Do link, lê só o nome do site (sem http, www nem caminho). Completa com espaços para o destaque não se deslocar. */
+        fun semLinks(s: String) = LINK.replace(s) { it.groupValues[4].padEnd(it.value.length) }
         /** Fim de frase: pontuação seguida de espaço ou do fim do texto, ou quebra de linha. Assim "Academia.edu" e "1.500" ficam inteiros. */
         private val FIM = Regex("[.!?…]+(?=\\s|$)|\\n")
 

@@ -5,6 +5,9 @@ import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lepramim.data.Preferencias
+import com.lepramim.leitura.Azure
+import com.lepramim.leitura.Leitura
+import com.lepramim.leitura.ErroAzure
 import com.lepramim.data.Repositorio
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,6 +34,16 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     private var consulta: TextToSpeech? = null
 
     init {
+        // Carrega sozinho as vozes pt-BR da Azure quando há chave.
+        viewModelScope.launch {
+            repo.preferencias.map { Triple(it.azure, it.regiao, it.chave) }.distinctUntilChanged().collect { (az, reg, ch) ->
+                if (!az || ch.isEmpty()) return@collect
+                runCatching {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Azure.vozes(reg, ch) }
+                }.onSuccess { l -> _vozesAzure.value = l.map { Voz(it.first, it.second) } }
+                    .onFailure { e -> _mensagem.value = "Vozes não carregaram: " + if (e is ErroAzure) Azure.mensagem(e.codigo) else (e.message ?: "erro") }
+            }
+        }
         viewModelScope.launch {
             repo.preferencias.map { it.motor }.distinctUntilChanged().collect { listar(it) }
         }
@@ -61,9 +74,37 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
         return base.replaceFirstChar { it.titlecase() } + " (" + local.getDisplayCountry(Locale("pt", "BR")).ifEmpty { local.displayName } + ")"
     }
 
-    fun definirMotor(m: String) = viewModelScope.launch { repo.definirMotor(m) }
-    fun definirVoz(v: String) = viewModelScope.launch { repo.definirVoz(v) }
-    fun definirVelocidade(v: Float) = viewModelScope.launch { repo.definirVelocidade(v) }
+    private val _vozesAzure = MutableStateFlow<List<Voz>>(emptyList())
+    val vozesAzure: StateFlow<List<Voz>> = _vozesAzure
+    private val _mensagem = MutableStateFlow("")
+    val mensagem: StateFlow<String> = _mensagem
+
+    fun definirRegiao(r: String) = viewModelScope.launch { repo.definirRegiao(r) }
+    fun definirVozAzure(v: String) = viewModelScope.launch { repo.definirVozAzure(v); aplicar() }
+    fun colarChave(c: String) = viewModelScope.launch { repo.definirChave(c); _mensagem.value = "" }
+    fun removerChave() = viewModelScope.launch { repo.definirChave(""); _vozesAzure.value = emptyList(); _mensagem.value = "" }
+
+    /** Manda uma frase curta e busca as vozes pt-BR; mostra o resultado em palavras. */
+    fun testar() = viewModelScope.launch {
+        val p = prefs.value
+        _mensagem.value = "Testando..."
+        _mensagem.value = try {
+            val lista = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                Azure.sintetizar(p.regiao, p.chave, p.vozAzure, 1f, "Teste.")
+                Azure.vozes(p.regiao, p.chave)
+            }
+            _vozesAzure.value = lista.map { Voz(it.first, it.second) }
+            "Funcionando."
+        } catch (e: ErroAzure) {
+            Azure.mensagem(e.codigo)
+        }
+    }
+
+    private fun aplicar() = Leitura.comando(getApplication(), Leitura.ACAO_RECARREGAR)
+
+    fun definirMotor(m: String) = viewModelScope.launch { repo.definirMotor(m); aplicar() }
+    fun definirVoz(v: String) = viewModelScope.launch { repo.definirVoz(v); aplicar() }
+    fun definirVelocidade(v: Float) = viewModelScope.launch { repo.definirVelocidade(v); aplicar() }
     fun definirDestacar(d: Boolean) = viewModelScope.launch { repo.definirDestacar(d) }
 
     override fun onCleared() {

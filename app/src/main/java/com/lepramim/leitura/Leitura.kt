@@ -40,6 +40,7 @@ object Leitura {
     const val ACAO_AVANCAR = "avancar"
     const val ACAO_PARAR = "parar"
     const val ACAO_IR = "ir"
+    const val ACAO_RECARREGAR = "recarregar"
     const val EXTRA_POSICAO = "posicao"
     const val EXTRA_TEXTO = "texto"
 
@@ -83,6 +84,15 @@ object Leitura {
     fun limpar(c: Context) {
         if (_situacao.value != Situacao.PARADO) comando(c, ACAO_PARAR)
         _texto.value = ""
+        _trecho.value = null
+    }
+
+    /** Guarda o texto no cartão sem ler; quem lê é o play. */
+    fun definir(c: Context, texto: String) {
+        val limpo = semChamadaFinal(texto).trim()
+        if (limpo.isEmpty()) return
+        if (_situacao.value != Situacao.PARADO) comando(c, ACAO_PARAR)
+        _texto.value = limpo
         _trecho.value = null
     }
 
