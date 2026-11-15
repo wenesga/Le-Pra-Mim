@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.lepramim.data.CorDestaque
+import com.lepramim.data.TemaApp
 
 // Mesmo visual do Escala de Trabalho: base neutra no claro, azul-marinho no escuro, destaque à escolha.
 private val BaseClara = EsquemaClaro.copy(
@@ -172,8 +173,12 @@ object Espaco {
 }
 
 @Composable
-fun TemaLeitor(cor: CorDestaque, content: @Composable () -> Unit) {
-    val escuro = isSystemInDarkTheme()
+fun TemaLeitor(cor: CorDestaque, tema: TemaApp, content: @Composable () -> Unit) {
+    val escuro = when (tema) {
+        TemaApp.SISTEMA -> isSystemInDarkTheme()
+        TemaApp.CLARO -> false
+        TemaApp.ESCURO -> true
+    }
     val view = LocalView.current
     if (!view.isInEditMode) SideEffect {
         (view.context as? Activity)?.window?.let { janela ->

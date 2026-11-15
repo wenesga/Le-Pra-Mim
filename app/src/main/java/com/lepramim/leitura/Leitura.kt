@@ -87,12 +87,11 @@ object Leitura {
         _trecho.value = null
     }
 
-    /** Guarda o texto no cartão sem ler; quem lê é o play. */
-    fun definir(c: Context, texto: String) {
-        val limpo = semChamadaFinal(texto).trim()
-        if (limpo.isEmpty()) return
+    /** Texto digitado no editor. Editar para a leitura, porque as frases em andamento ficam velhas. */
+    fun editar(c: Context, novo: String) {
+        if (novo == _texto.value) return
         if (_situacao.value != Situacao.PARADO) comando(c, ACAO_PARAR)
-        _texto.value = limpo
+        _texto.value = novo
         _trecho.value = null
     }
 

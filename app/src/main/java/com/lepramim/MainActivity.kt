@@ -12,7 +12,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.ui.LeitorViewModel
-import com.lepramim.ui.TelaLeitor
+import com.lepramim.ui.AppLeitor
 import com.lepramim.ui.theme.TemaLeitor
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val prefs by vm.prefs.collectAsStateWithLifecycle()
-            TemaLeitor(prefs.cor) { TelaLeitor(vm) }
+            TemaLeitor(prefs.cor, prefs.tema) { AppLeitor(vm) }
         }
     }
 

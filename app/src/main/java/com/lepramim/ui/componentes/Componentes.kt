@@ -1,0 +1,116 @@
+package com.lepramim.ui.componentes
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.lepramim.ui.theme.Espaco
+
+/** Moldura das páginas de Ajustes: barra com seta de voltar e conteúdo rolável. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Pagina(
+    titulo: String,
+    aoVoltar: () -> Unit,
+    avisos: SnackbarHostState,
+    conteudo: @Composable ColumnScope.() -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(titulo) },
+                navigationIcon = {
+                    IconButton(onClick = aoVoltar) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar") }
+                },
+            )
+        },
+        snackbarHost = { SnackbarHost(avisos) },
+    ) { margens ->
+        Column(
+            Modifier.fillMaxSize().padding(margens).verticalScroll(rememberScrollState()).padding(Espaco.gg),
+            verticalArrangement = Arrangement.spacedBy(Espaco.xg),
+            content = conteudo,
+        )
+    }
+}
+
+/** Grupo de ajustes com título na cor de destaque. */
+@Composable
+fun Secao(titulo: String, conteudo: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
+        Text(titulo, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        conteudo()
+    }
+}
+
+@Composable
+fun LinhaSwitch(titulo: String, marcado: Boolean, aoMudar: (Boolean) -> Unit, resumo: String? = null) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(titulo, style = MaterialTheme.typography.bodyLarge)
+            if (resumo != null) Text(resumo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = marcado, onCheckedChange = aoMudar)
+    }
+}
+
+/** Lista suspensa de escolha única. `opcoes` são pares (id, nome); a escolhida fica em destaque. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Seletor(rotulo: String, valor: String, opcoes: List<Pair<String, String>>, escolher: (String) -> Unit) {
+    var aberto by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = aberto, onExpandedChange = { aberto = it }) {
+        OutlinedTextField(
+            value = valor, onValueChange = {}, readOnly = true, singleLine = true,
+            label = { Text(rotulo) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = aberto) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+        )
+        ExposedDropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
+            opcoes.forEach { (id, nome) ->
+                val atual = nome == valor
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            nome,
+                            color = if (atual) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                            fontWeight = if (atual) FontWeight.Bold else null,
+                        )
+                    },
+                    onClick = { escolher(id); aberto = false },
+                )
+            }
+        }
+    }
+}

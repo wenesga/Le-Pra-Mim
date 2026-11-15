@@ -82,6 +82,8 @@ class LeituraServico : Service() {
                 }
             }
             Leitura.ACAO_PAUSAR -> {
+                // Guarda o ponto exato: ao continuar, a voz segue dali.
+                if (Leitura._situacao.value == Situacao.TOCANDO) retomar = posicaoAtual()
                 tts?.stop()
                 pararAzure()
                 Leitura._situacao.value = Situacao.PAUSADO
@@ -98,6 +100,7 @@ class LeituraServico : Service() {
             }
             Leitura.ACAO_IR -> {
                 val pos = intent.getIntExtra(Leitura.EXTRA_POSICAO, 0)
+                retomar = -1
                 if (frases.isNotEmpty()) {
                     atual = frases.indexOfLast { it.first <= pos }.coerceAtLeast(0)
                     Leitura._trecho.value = frases[atual]
@@ -105,7 +108,8 @@ class LeituraServico : Service() {
                 }
             }
             Leitura.ACAO_RECARREGAR -> if (Leitura._situacao.value == Situacao.TOCANDO) escopo.launch {
-                // Voz ou velocidade mudaram: continua da frase atual com a nova escolha.
+                // Voz ou velocidade mudaram: continua do ponto exato em que a voz parou, não do começo da frase.
+                retomar = posicaoAtual()
                 tts?.stop()
                 pararAzure()
                 prefs = Repositorio(this@LeituraServico).preferencias.first()
@@ -119,7 +123,31 @@ class LeituraServico : Service() {
         return START_NOT_STICKY
     }
 
+    /** Onde retomar na frase atual (posição no texto) depois de trocar a voz; -1 = do começo da frase. Usado uma vez. */
+    private var retomar = -1
+    private var retomadoIdx = -1
+    private var retomadoEm = 0
+    /** Início da palavra que o motor do aparelho está falando (posição no texto). */
+    @Volatile private var palavra = -1
+
+    private fun inicioDe(i: Int) = if (i == retomadoIdx) retomadoEm else frases[i].first
+
+    /** Posição no texto em que a fala está agora, recuada até o começo da palavra. */
+    private fun posicaoAtual(): Int {
+        val fr = frases.getOrNull(atual) ?: return -1
+        val texto = Leitura._texto.value
+        val mp = player
+        val bruto = if (prefs.azure && mp != null) {
+            val f = runCatching { mp.currentPosition.toFloat() / mp.duration.coerceAtLeast(1) }.getOrDefault(0f)
+            inicioDe(atual) + (f * (fr.last + 1 - inicioDe(atual))).toInt()
+        } else palavra.takeIf { it >= inicioDe(atual) } ?: return -1
+        var p = bruto.coerceIn(fr.first, fr.last)
+        while (p > fr.first && !texto[p - 1].isWhitespace()) p--
+        return p
+    }
+
     private fun pular(passo: Int) {
+        retomar = -1
         if (frases.isEmpty()) return
         atual = (atual + passo).coerceIn(0, frases.lastIndex)
         Leitura._trecho.value = frases[atual]
@@ -172,11 +200,21 @@ class LeituraServico : Service() {
         if (!pronto || frases.isEmpty()) return
         pedirFoco()
         val texto = Leitura._texto.value
+        definirRetomada()
         for (i in atual..frases.lastIndex) {
             val r = frases[i]
             val modo = if (i == atual) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-            t.speak(semLinks(texto.substring(r.first, r.last + 1)).ifBlank { "." }, modo, Bundle(), "f$i")
+            t.speak(semLinks(texto.substring(inicioDe(i), r.last + 1), prefs).ifBlank { "." }, modo, Bundle(), "f$i")
         }
+    }
+
+    /** Consome o ponto de retomada: vale só para a frase atual, uma vez. */
+    private fun definirRetomada() {
+        val r = retomar
+        retomar = -1
+        val fr = frases.getOrNull(atual)
+        if (r >= 0 && fr != null && r in fr) { retomadoIdx = atual; retomadoEm = r } else retomadoIdx = -1
+        palavra = -1
     }
 
     private var jobAzure: Job? = null
@@ -200,9 +238,10 @@ class LeituraServico : Service() {
         val texto = Leitura._texto.value
         val p = prefs
         val repo = Repositorio(this)
+        definirRetomada()
         fun buscar(i: Int) = escopo.async(Dispatchers.IO) {
             val r = frases[i]
-            val t = semLinks(texto.substring(r.first, r.last + 1)).trim()
+            val t = semLinks(texto.substring(inicioDe(i), r.last + 1), p).trim()
             if (t.isEmpty()) return@async ByteArray(0)
             Azure.sintetizar(p.regiao, p.chave, p.vozAzure, p.velocidade, t).also { repo.somarCaracteres(t.length) }
         }
@@ -214,9 +253,9 @@ class LeituraServico : Service() {
                     val mp3 = proxAzure!!.await()
                     proxAzure = if (i < frases.lastIndex) buscar(i + 1) else null
                     atual = i
-                    Leitura._trecho.value = frases[i]
+                    Leitura._trecho.value = inicioDe(i)..frases[i].last
                     if (Leitura._situacao.value == Situacao.TOCANDO) mostrar()
-                    if (mp3.isNotEmpty()) tocar(mp3, frases[i].last - frases[i].first + 1)
+                    if (mp3.isNotEmpty()) tocar(mp3, frases[i].last - inicioDe(i) + 1)
                     i++
                 }
                 encerrar()
@@ -252,24 +291,27 @@ class LeituraServico : Service() {
         override fun onStart(id: String) {
             val i = id.removePrefix("f").toIntOrNull() ?: return
             inicioFrase = SystemClock.elapsedRealtime()
+            palavra = frases.getOrNull(i)?.let { inicioDe(i) } ?: -1
             escopo.launch {
                 atual = i
-                Leitura._trecho.value = frases.getOrNull(i)
+                Leitura._trecho.value = frases.getOrNull(i)?.let { inicioDe(i)..it.last }
                 if (Leitura._situacao.value == Situacao.TOCANDO) mostrar()
             }
         }
 
         override fun onRangeStart(id: String, inicio: Int, fim: Int, frame: Int) {
-            if (!prefs.destacar) return
             val i = id.removePrefix("f").toIntOrNull() ?: return
-            val base = frases.getOrNull(i)?.first ?: return
+            if (i !in frases.indices) return
+            val base = inicioDe(i)
+            palavra = base + inicio
+            if (!prefs.destacar) return
             escopo.launch { Leitura._trecho.value = (base + inicio) until (base + fim) }
         }
 
         override fun onDone(id: String) {
             val i = id.removePrefix("f").toIntOrNull() ?: return
             val ms = SystemClock.elapsedRealtime() - inicioFrase
-            val tamanho = frases.getOrNull(i)?.let { it.last - it.first + 1 } ?: 0
+            val tamanho = frases.getOrNull(i)?.let { it.last - inicioDe(i) + 1 } ?: 0
             if (i == frases.lastIndex) escopo.launch { encerrar() }
             else if (ms > 400 && tamanho > 8) escopo.launch {
                 // Ajusta a estimativa com o ritmo real da voz.
@@ -437,7 +479,19 @@ class LeituraServico : Service() {
         private val LINK = Regex("""((http|ftp|https)://)?(www\.)?([-a-zA-Z0-9@:%._\+~#\=]{2,256}\.[a-z]{2,6}\b)([-a-zA-Z0-9@:%_\+.~#?&//\=]*)""")
 
         /** Do link, lê só o nome do site (sem http, www nem caminho). Completa com espaços para o destaque não se deslocar. */
-        fun semLinks(s: String) = LINK.replace(s) { it.groupValues[4].padEnd(it.value.length) }
+        fun semLinks(s: String, p: Preferencias): String {
+            var r = LINK.replace(s) { it.groupValues[4].padEnd(it.value.length) }
+            if (p.markdown) r = semMarcas(r)
+            // Filtros do usuário: o que a expressão encontrar vira espaço e não é lido.
+            for (re in p.regexes) r = re.replace(r) { " ".repeat(it.value.length) }
+            return r
+        }
+
+        /** Marcas de Markdown que não devem ser lidas: asteriscos, crases e, no começo da linha, #, travessão de lista e >. */
+        private val MARCAS = Regex("""\*+|`+|^[ \t]*(?:#{1,6}|[-•>]+)[ \t]+""", RegexOption.MULTILINE)
+
+        /** Troca as marcas por espaços, para o destaque não se deslocar. */
+        fun semMarcas(s: String) = MARCAS.replace(s) { " ".repeat(it.value.length) }
         /** Fim de frase: pontuação seguida de espaço ou do fim do texto, ou quebra de linha. Assim "Academia.edu" e "1.500" ficam inteiros. */
         private val FIM = Regex("[.!?…]+(?=\\s|$)|\\n")
 
