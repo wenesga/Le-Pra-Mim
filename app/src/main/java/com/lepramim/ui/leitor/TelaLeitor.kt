@@ -3,6 +3,7 @@ package com.lepramim.ui.leitor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
@@ -105,7 +106,12 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     Scaffold(
         modifier = Modifier.imePadding(),
         topBar = {
+            androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent, scrolledContainerColor = Color.Transparent,
+                ),
                 title = {
                     // O seletor só existe com a Azure; a voz do aparelho se escolhe em Ajustes.
                     if (prefs.azure) {
@@ -166,11 +172,30 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                     }
                 },
             )
+            if (prefs.azure) {
+                val usados = prefs.portalNoMes ?: prefs.usadosNoMes
+                val cota = com.lepramim.data.Preferencias.COTA_AZURE
+                val perto = usados > cota * 0.9
+                Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)) {
+                    Text(
+                        "%,d de %d mil".format(java.util.Locale("pt", "BR"), usados, cota / 1000),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                        color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            }
+            }
         },
         bottomBar = {
             BarraPlayer(
                 total = texto.length, trecho = trecho, situacao = situacao, cps = cps, exportando = exportando,
-                uso = if (prefs.azure) prefs.usadosNoMes to com.lepramim.data.Preferencias.COTA_AZURE else null,
+                uso = if (prefs.azure) (prefs.portalNoMes ?: prefs.usadosNoMes) to com.lepramim.data.Preferencias.COTA_AZURE else null,
                 aoAlternar = {
                     foco.clearFocus()
                     Leitura.comando(contexto, if (situacao == Situacao.TOCANDO) Leitura.ACAO_PAUSAR else Leitura.ACAO_CONTINUAR)

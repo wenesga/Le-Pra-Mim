@@ -34,7 +34,20 @@ data class Preferencias(
     val tema: TemaApp = TemaApp.SISTEMA,
     val markdown: Boolean = true,
     val filtros: List<String> = emptyList(),
+    val monApp: String = "",
+    val monTenant: String = "",
+    val monSegredo: String = "",
+    val monAssinatura: String = "",
+    val monRecurso: String = "lepramim-fala",
+    val portalCaracteres: Long = 0L,
+    val portalMes: String = "",
 ) {
+    /** Credenciais do Azure Monitor preenchidas: dá para ler o consumo do portal. */
+    val monitorPronto get() = monApp.isNotBlank() && monTenant.isNotBlank() && monSegredo.isNotBlank() && monRecurso.isNotBlank()
+
+    /** Total do portal neste mês, ou null se ainda não foi lido. */
+    val portalNoMes get() = if (portalMes == mesAtual()) portalCaracteres else null
+
     val azure get() = motor == MOTOR_AZURE
 
     /** Filtros do usuário já compilados; os inválidos são ignorados. */
@@ -71,6 +84,13 @@ private object Chaves {
     val tema = stringPreferencesKey("tema")
     val markdown = booleanPreferencesKey("markdown")
     val filtros = stringPreferencesKey("filtros")
+    val monApp = stringPreferencesKey("mon_app")
+    val monTenant = stringPreferencesKey("mon_tenant")
+    val monSegredo = stringPreferencesKey("mon_segredo")
+    val monAssinatura = stringPreferencesKey("mon_assinatura")
+    val monRecurso = stringPreferencesKey("mon_recurso")
+    val portalCaracteres = longPreferencesKey("portal_caracteres")
+    val portalMes = stringPreferencesKey("portal_mes")
 }
 
 class Repositorio(private val contexto: Context) {
@@ -90,6 +110,13 @@ class Repositorio(private val contexto: Context) {
             tema = runCatching { TemaApp.valueOf(it[Chaves.tema] ?: "") }.getOrDefault(TemaApp.SISTEMA),
             markdown = it[Chaves.markdown] ?: true,
             filtros = it[Chaves.filtros].orEmpty().split('\n').filter { f -> f.isNotEmpty() },
+            monApp = it[Chaves.monApp] ?: "",
+            monTenant = it[Chaves.monTenant] ?: "",
+            monSegredo = it[Chaves.monSegredo] ?: "",
+            monAssinatura = it[Chaves.monAssinatura] ?: "",
+            monRecurso = it[Chaves.monRecurso] ?: "lepramim-fala",
+            portalCaracteres = it[Chaves.portalCaracteres] ?: 0L,
+            portalMes = it[Chaves.portalMes] ?: "",
         )
     }
 
@@ -105,6 +132,20 @@ class Repositorio(private val contexto: Context) {
     suspend fun definirChave(c: String) = contexto.loja.edit {
         it[Chaves.chave] = c.trim()
         it[Chaves.chaveEm] = if (c.isBlank()) 0L else System.currentTimeMillis()
+    }
+    suspend fun definirMonApp(v: String) = contexto.loja.edit { it[Chaves.monApp] = v.trim() }
+    suspend fun definirMonTenant(v: String) = contexto.loja.edit { it[Chaves.monTenant] = v.trim() }
+    suspend fun definirMonSegredo(v: String) = contexto.loja.edit { it[Chaves.monSegredo] = v.trim() }
+    suspend fun definirMonAssinatura(v: String) = contexto.loja.edit { it[Chaves.monAssinatura] = v.trim() }
+    suspend fun definirMonRecurso(v: String) = contexto.loja.edit { it[Chaves.monRecurso] = v.trim() }
+    suspend fun guardarPortal(total: Long, assinatura: String) = contexto.loja.edit {
+        it[Chaves.portalCaracteres] = total
+        it[Chaves.portalMes] = mesAtual()
+        if (it[Chaves.monAssinatura].isNullOrBlank()) it[Chaves.monAssinatura] = assinatura
+    }
+    suspend fun limparMonitor() = contexto.loja.edit {
+        it[Chaves.monApp] = ""; it[Chaves.monTenant] = ""; it[Chaves.monSegredo] = ""
+        it[Chaves.monAssinatura] = ""; it[Chaves.portalCaracteres] = 0L; it[Chaves.portalMes] = ""
     }
     suspend fun definirVozAzure(v: String) = contexto.loja.edit { it[Chaves.vozAzure] = v }
 

@@ -71,9 +71,7 @@ fun BarraPlayer(
                 Text(
                     when {
                         exportando.isNotEmpty() -> "Exportando $exportando"
-                        // Com a Azure, o que importa é o consumo do mês (a cota exata não é conhecida).
-                        uso != null -> "%,d".format(Locale("pt", "BR"), uso.first)
-                        else -> "%,d caracteres".format(Locale("pt", "BR"), total)
+                        else -> "%,d car.".format(Locale("pt", "BR"), total)
                     },
                     style = rotulo, color = cor,
                 )

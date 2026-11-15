@@ -190,8 +190,50 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
                 }
             }
         }
+        Secao("Consumo no portal") {
+            val mensagemMonitor by vm.mensagemMonitor.collectAsStateWithLifecycle()
+            var app by remember(prefs.monApp) { mutableStateOf(prefs.monApp) }
+            var tenant by remember(prefs.monTenant) { mutableStateOf(prefs.monTenant) }
+            var assinatura by remember(prefs.monAssinatura) { mutableStateOf(prefs.monAssinatura) }
+            var recurso by remember(prefs.monRecurso) { mutableStateOf(prefs.monRecurso) }
+            OutlinedTextField(
+                value = app, onValueChange = { app = it; vm.definirMonApp(it) },
+                singleLine = true, label = { Text("ID do aplicativo") }, modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = tenant, onValueChange = { tenant = it; vm.definirMonTenant(it) },
+                singleLine = true, label = { Text("ID do diretório") }, modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = recurso, onValueChange = { recurso = it; vm.definirMonRecurso(it) },
+                singleLine = true, label = { Text("Recurso") }, modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = assinatura, onValueChange = { assinatura = it; vm.definirMonAssinatura(it) },
+                singleLine = true, label = { Text("ID da assinatura") }, modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = if (prefs.monSegredo.isEmpty()) "" else "••••••••••••",
+                onValueChange = {}, readOnly = true, singleLine = true,
+                label = { Text("Valor") }, placeholder = { Text("Cole o valor") },
+                supportingText = if (mensagemMonitor.isNotEmpty()) ({ Text(mensagemMonitor) }) else null,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (prefs.monSegredo.isEmpty()) {
+                Button(modifier = Modifier.fillMaxWidth(), onClick = {
+                    val cm = contexto.getSystemService(ClipboardManager::class.java)
+                    val t = cm.primaryClip?.getItemAt(0)?.text?.toString().orEmpty().trim()
+                    if (t.isNotEmpty()) { vm.colarSegredo(t); cm.clearPrimaryClip() }
+                }) { Text("Colar") }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
+                    Button(modifier = Modifier.weight(1f), onClick = { vm.atualizarPortal() }) { Text("Atualizar") }
+                    OutlinedButton(modifier = Modifier.weight(1f), onClick = vm::removerMonitor) { Text("Remover") }
+                }
+            }
+        }
         Secao("Uso do mês") {
-            val usados = prefs.usadosNoMes
+            val usados = prefs.portalNoMes ?: prefs.usadosNoMes
             val cota = Preferencias.COTA_AZURE
             val perto = usados > cota * 0.9
             LinearProgressIndicator(

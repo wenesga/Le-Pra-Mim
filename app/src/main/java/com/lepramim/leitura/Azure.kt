@@ -1,6 +1,7 @@
 package com.lepramim.leitura
 
 import org.json.JSONArray
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -37,6 +38,63 @@ object Azure {
         c.outputStream.use { it.write(ssml.toByteArray()) }
         if (c.responseCode != 200) throw ErroAzure(c.responseCode)
         c.inputStream.use { it.readBytes() }
+    }
+
+    fun mensagemMonitor(codigo: Int) = when (codigo) {
+        400, 401 -> "ID ou segredo recusado. Confira os três campos."
+        403 -> "Sem permissão. Falta a função Leitor do Monitoramento."
+        404 -> "Recurso ou assinatura não encontrados. Confira o nome do recurso."
+        0 -> "Sem internet ou Azure fora do ar."
+        else -> "Erro da Azure ($codigo)."
+    }
+
+    private fun json(c: HttpURLConnection): JSONObject {
+        val corpo = (if (c.responseCode in 200..299) c.inputStream else c.errorStream)?.use { it.readBytes().decodeToString() }.orEmpty()
+        if (c.responseCode !in 200..299) throw ErroAzure(c.responseCode)
+        return JSONObject(corpo)
+    }
+
+    /**
+     * Total de caracteres sintetizados no mês, lido do Azure Monitor (o mesmo número do portal).
+     * Devolve o total e o ID da assinatura usada. O recurso e o grupo têm o mesmo nome.
+     */
+    fun consumoDoMes(tenant: String, app: String, segredo: String, assinatura: String, recurso: String): Pair<Long, String> = chamar {
+        val t = URL("https://login.microsoftonline.com/${tenant.trim()}/oauth2/v2.0/token").openConnection() as HttpURLConnection
+        t.connectTimeout = 10000; t.readTimeout = 20000
+        t.requestMethod = "POST"; t.doOutput = true
+        val enc = { s: String -> java.net.URLEncoder.encode(s.trim(), "UTF-8") }
+        t.outputStream.use {
+            it.write("grant_type=client_credentials&client_id=${enc(app)}&client_secret=${enc(segredo)}&scope=${enc("https://management.azure.com/.default")}".toByteArray())
+        }
+        val token = json(t).getString("access_token")
+
+        fun get(url: String) = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10000; readTimeout = 20000
+            setRequestProperty("Authorization", "Bearer $token")
+        }
+        val sub = assinatura.trim().ifEmpty {
+            val l = json(get("https://management.azure.com/subscriptions?api-version=2022-12-01")).getJSONArray("value")
+            if (l.length() == 0) throw ErroAzure(404)
+            l.getJSONObject(0).getString("subscriptionId")
+        }
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.ROOT).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+            set(java.util.Calendar.DAY_OF_MONTH, 1); set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0)
+        }
+        val inicio = fmt.format(cal.time)
+        val fim = fmt.format(java.util.Date())
+        val r = recurso.trim()
+        val url = "https://management.azure.com/subscriptions/$sub/resourceGroups/$r/providers/Microsoft.CognitiveServices/accounts/$r" +
+            "/providers/microsoft.insights/metrics?api-version=2018-01-01&metricnames=SynthesizedCharacters&aggregation=Total&interval=P1D&timespan=" +
+            enc("$inicio/$fim")
+        val series = json(get(url)).getJSONArray("value").getJSONObject(0).getJSONArray("timeseries")
+        var total = 0.0
+        for (i in 0 until series.length()) {
+            val d = series.getJSONObject(i).optJSONArray("data") ?: continue
+            for (j in 0 until d.length()) total += d.getJSONObject(j).optDouble("total", 0.0)
+        }
+        total.toLong() to sub
     }
 
     /** Vozes pt-BR neurais disponíveis na região (nome curto e rótulo). */

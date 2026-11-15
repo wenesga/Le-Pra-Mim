@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,6 +50,11 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             repo.preferencias.map { it.motor }.distinctUntilChanged().collect { listar(it) }
+        }
+        // Ao abrir o app, atualiza sozinho o consumo do portal (sem mostrar erro).
+        viewModelScope.launch {
+            val p = repo.preferencias.first()
+            if (p.azure && p.monitorPronto) atualizarPortal(mostrarErro = false)
         }
     }
 
@@ -99,6 +105,32 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
             "Funcionando."
         } catch (e: ErroAzure) {
             Azure.mensagem(e.codigo)
+        }
+    }
+
+    private val _mensagemMonitor = MutableStateFlow("")
+    val mensagemMonitor: StateFlow<String> = _mensagemMonitor
+
+    fun definirMonApp(v: String) = viewModelScope.launch { repo.definirMonApp(v) }
+    fun definirMonTenant(v: String) = viewModelScope.launch { repo.definirMonTenant(v) }
+    fun definirMonAssinatura(v: String) = viewModelScope.launch { repo.definirMonAssinatura(v) }
+    fun definirMonRecurso(v: String) = viewModelScope.launch { repo.definirMonRecurso(v) }
+    fun colarSegredo(v: String) = viewModelScope.launch { repo.definirMonSegredo(v); _mensagemMonitor.value = "" }
+    fun removerMonitor() = viewModelScope.launch { repo.limparMonitor(); _mensagemMonitor.value = "" }
+
+    /** Lê no Azure Monitor o total de caracteres do mês (o número do portal). */
+    fun atualizarPortal(mostrarErro: Boolean = true) = viewModelScope.launch {
+        val p = prefs.value
+        if (!p.monitorPronto) return@launch
+        if (mostrarErro) _mensagemMonitor.value = "Buscando..."
+        try {
+            val (total, sub) = withContext(Dispatchers.IO) {
+                Azure.consumoDoMes(p.monTenant, p.monApp, p.monSegredo, p.monAssinatura, p.monRecurso)
+            }
+            repo.guardarPortal(total, sub)
+            _mensagemMonitor.value = if (mostrarErro) "Atualizado." else ""
+        } catch (e: ErroAzure) {
+            if (mostrarErro) _mensagemMonitor.value = Azure.mensagemMonitor(e.codigo)
         }
     }
 
