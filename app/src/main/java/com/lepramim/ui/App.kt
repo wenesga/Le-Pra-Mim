@@ -26,6 +26,12 @@ fun AppLeitor(vm: LeitorViewModel) {
     val aviso by vm.aviso.collectAsStateWithLifecycle()
     LaunchedEffect(aviso) { aviso?.let { avisos.showSnackbar(it); vm.avisoLido() } }
 
+    // Cada vez que o app volta para a frente, busca de novo o consumo do portal.
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        val p = vm.prefs.value
+        if (p.azure && p.monitorPronto) vm.atualizarPortal(mostrarErro = false)
+    }
+
     var pilha by rememberSaveable { mutableStateOf(listOf(Rota.LEITOR)) }
     val navegar = { r: Rota -> pilha = pilha + r }
     val voltar = { if (pilha.size > 1) pilha = pilha.dropLast(1) }
