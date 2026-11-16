@@ -208,7 +208,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
         snackbarHost = { SnackbarHost(avisos) },
     ) { margens ->
         Editor(
-            texto = texto, trecho = trecho,
+            texto = texto, trecho = trecho, destacar = prefs.destacar,
             aoEditar = { Leitura.editar(contexto, it) },
             aoColar = colar,
             modifier = Modifier.padding(margens),

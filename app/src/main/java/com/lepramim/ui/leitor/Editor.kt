@@ -47,6 +47,7 @@ import com.lepramim.ui.theme.Espaco
 fun Editor(
     texto: String,
     trecho: IntRange?,
+    destacar: Boolean,
     aoEditar: (String) -> Unit,
     aoColar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,10 +61,11 @@ fun Editor(
 
     val corFundo = MaterialTheme.colorScheme.primaryContainer
     val corTexto = MaterialTheme.colorScheme.onPrimaryContainer
-    val destaque = remember(trecho, corFundo, corTexto) {
+    val destaque = remember(trecho, destacar, corFundo, corTexto) {
         VisualTransformation { t ->
+            // Com o destaque desligado a rolagem continua seguindo a leitura, só não pinta.
             val r = trecho
-            val anotado = if (r == null || r.first >= t.length) t else buildAnnotatedString {
+            val anotado = if (!destacar || r == null || r.first >= t.length) t else buildAnnotatedString {
                 append(t)
                 addStyle(SpanStyle(background = corFundo, color = corTexto), r.first, (r.last + 1).coerceAtMost(t.length))
             }
