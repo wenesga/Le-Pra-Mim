@@ -21,9 +21,13 @@ enum class TamanhoTexto(val sp: Int, val nome: String) {
     PEQUENO(17, "Pequeno"), MEDIO(20, "Médio"), GRANDE(24, "Grande"), MAIOR(28, "Maior")
 }
 
-/** Fonte do texto da tela principal; as cinco últimas são suaves e feitas para facilitar a leitura. */
-enum class FonteTexto(val nome: String) {
-    PADRAO("Padrão"), ATKINSON("Atkinson"), LEXEND("Lexend"), ANDIKA("Andika"), COMICNEUE("Comic Neue"), MULISH("Mulish")
+/** Fonte do texto da tela principal. As de dislexia têm letras mais pesadas embaixo; as outras são só legíveis. */
+enum class FonteTexto(val nome: String, val dislexia: Boolean) {
+    PADRAO("Padrão", false), ATKINSON("Atkinson", false), LEXEND("Lexend", false), ANDIKA("Andika", false),
+    COMICNEUE("Comic Neue", false), MULISH("Mulish", false), LATO("Lato", false), FIRASANS("Fira Sans", false),
+    NOTOSANS("Noto Sans", false), PTSANS("PT Sans", false),
+    OPENDYSLEXIC3("OpenDyslexic 3", true), OPENDYSLEXIC("OpenDyslexic", true), OPENDYSLEXICALTA("OpenDyslexic Alta", true),
+    OPENDYSLEXICMONO("OpenDyslexic Mono", true), OPENDYSLEXIC092("OpenDyslexic 0.92", true), OPENDYSLEXIC091("OpenDyslexic 0.91", true)
 }
 
 private fun mesAtual() = java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.ROOT).format(java.util.Date())

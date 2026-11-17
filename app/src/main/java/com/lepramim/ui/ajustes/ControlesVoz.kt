@@ -43,6 +43,7 @@ fun SeletorMotor(vm: LeitorViewModel) {
                 selected = prefs.motor == id,
                 onClick = { vm.definirMotor(id) },
                 shape = SegmentedButtonDefaults.itemShape(i, opcoes.size),
+                icon = {},
             ) { Text(nome) }
         }
     }

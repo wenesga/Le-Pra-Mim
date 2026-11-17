@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.AccessibilityNew
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FilterAlt
@@ -305,6 +304,7 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                         selected = prefs.tema == tema,
                         onClick = { vm.definirTema(tema) },
                         shape = SegmentedButtonDefaults.itemShape(i, temas.size),
+                        icon = {},
                     ) { Text(nome) }
                 }
             }
@@ -317,23 +317,11 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                         selected = prefs.tamanho == t,
                         onClick = { vm.definirTamanho(t) },
                         shape = SegmentedButtonDefaults.itemShape(i, tamanhos.size),
+                        icon = {},
                     ) { Text(t.nome, maxLines = 1) }
                 }
             }
-            com.lepramim.data.FonteTexto.entries.forEach { f ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { vm.definirFonte(f) }.padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        f.nome, Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontFamily = f.familia(),
-                        color = if (f == prefs.fonte) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (f == prefs.fonte) Icon(Icons.Outlined.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-            }
+            SeletorFonte(prefs.fonte, prefs.tamanho.sp) { vm.definirFonte(it) }
         }
         Secao("Cor") {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -344,9 +332,7 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                             .then(if (escolhida) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
                             .clickable { vm.definirCor(opcao) },
                         contentAlignment = Alignment.Center,
-                    ) {
-                        if (escolhida) Icon(Icons.Outlined.Check, contentDescription = nomeDaCor(opcao), tint = Color.White)
-                    }
+                    ) {}
                 }
             }
             Text(nomeDaCor(prefs.cor), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
