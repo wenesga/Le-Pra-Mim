@@ -16,6 +16,16 @@ enum class CorDestaque { AZUL, TURQUESA, LARANJA, VERMELHO, VERDE, CINZA }
 /** Tema do app: segue o sistema ou fica fixo. */
 enum class TemaApp { SISTEMA, CLARO, ESCURO }
 
+/** Tamanho do texto da tela principal, em sp. */
+enum class TamanhoTexto(val sp: Int, val nome: String) {
+    PEQUENO(17, "Pequeno"), MEDIO(20, "Médio"), GRANDE(24, "Grande"), MAIOR(28, "Maior")
+}
+
+/** Fonte do texto da tela principal; as cinco últimas são suaves e feitas para facilitar a leitura. */
+enum class FonteTexto(val nome: String) {
+    PADRAO("Padrão"), ATKINSON("Atkinson"), LEXEND("Lexend"), ANDIKA("Andika"), COMICNEUE("Comic Neue"), MULISH("Mulish")
+}
+
 private fun mesAtual() = java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.ROOT).format(java.util.Date())
 
 /** Escolhas de voz. Motor vazio = motor padrão do Android. */
@@ -33,6 +43,8 @@ data class Preferencias(
     val cor: CorDestaque = CorDestaque.VERDE,
     val tema: TemaApp = TemaApp.SISTEMA,
     val markdown: Boolean = true,
+    val tamanho: TamanhoTexto = TamanhoTexto.MEDIO,
+    val fonte: FonteTexto = FonteTexto.PADRAO,
     val filtros: List<String> = emptyList(),
     val monApp: String = "",
     val monTenant: String = "",
@@ -83,6 +95,8 @@ private object Chaves {
     val cor = stringPreferencesKey("cor")
     val tema = stringPreferencesKey("tema")
     val markdown = booleanPreferencesKey("markdown")
+    val tamanho = stringPreferencesKey("tamanho")
+    val fonte = stringPreferencesKey("fonte")
     val filtros = stringPreferencesKey("filtros")
     val monApp = stringPreferencesKey("mon_app")
     val monTenant = stringPreferencesKey("mon_tenant")
@@ -109,6 +123,8 @@ class Repositorio(private val contexto: Context) {
             cor = runCatching { CorDestaque.valueOf(it[Chaves.cor] ?: "") }.getOrDefault(CorDestaque.VERDE),
             tema = runCatching { TemaApp.valueOf(it[Chaves.tema] ?: "") }.getOrDefault(TemaApp.SISTEMA),
             markdown = it[Chaves.markdown] ?: true,
+            tamanho = runCatching { TamanhoTexto.valueOf(it[Chaves.tamanho] ?: "") }.getOrDefault(TamanhoTexto.MEDIO),
+            fonte = runCatching { FonteTexto.valueOf(it[Chaves.fonte] ?: "") }.getOrDefault(FonteTexto.PADRAO),
             filtros = it[Chaves.filtros].orEmpty().split('\n').filter { f -> f.isNotEmpty() },
             monApp = it[Chaves.monApp] ?: "",
             monTenant = it[Chaves.monTenant] ?: "",
@@ -126,6 +142,8 @@ class Repositorio(private val contexto: Context) {
     suspend fun definirDestacar(d: Boolean) = contexto.loja.edit { it[Chaves.destacar] = d }
     suspend fun definirCor(c: CorDestaque) = contexto.loja.edit { it[Chaves.cor] = c.name }
     suspend fun definirTema(t: TemaApp) = contexto.loja.edit { it[Chaves.tema] = t.name }
+    suspend fun definirTamanho(t: TamanhoTexto) = contexto.loja.edit { it[Chaves.tamanho] = t.name }
+    suspend fun definirFonte(f: FonteTexto) = contexto.loja.edit { it[Chaves.fonte] = f.name }
     suspend fun definirMarkdown(m: Boolean) = contexto.loja.edit { it[Chaves.markdown] = m }
     suspend fun definirFiltros(f: List<String>) = contexto.loja.edit { it[Chaves.filtros] = f.joinToString("\n") }
     suspend fun definirRegiao(r: String) = contexto.loja.edit { it[Chaves.regiao] = r.trim().lowercase() }

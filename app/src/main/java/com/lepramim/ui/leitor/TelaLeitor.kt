@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.lepramim.ui.ajustes.VOZES_AZURE_PADRAO
 import com.lepramim.ui.ajustes.nomeDaVozAzure
 import com.lepramim.ui.theme.Espaco
+import com.lepramim.ui.theme.familia
 import kotlinx.coroutines.launch
 
 /** Tela principal: o texto ocupa tudo; em cima ficam as ações e embaixo o player. */
@@ -209,6 +210,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     ) { margens ->
         Editor(
             texto = texto, trecho = trecho, destacar = prefs.destacar,
+            tamanho = prefs.tamanho.sp, fonte = prefs.fonte.familia(),
             aoEditar = { Leitura.editar(contexto, it) },
             aoColar = colar,
             modifier = Modifier.padding(margens),

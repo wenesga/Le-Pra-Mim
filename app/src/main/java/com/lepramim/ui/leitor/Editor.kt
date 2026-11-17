@@ -48,6 +48,8 @@ fun Editor(
     texto: String,
     trecho: IntRange?,
     destacar: Boolean,
+    tamanho: Int,
+    fonte: androidx.compose.ui.text.font.FontFamily,
     aoEditar: (String) -> Unit,
     aoColar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -90,7 +92,8 @@ fun Editor(
     }
 
     val estilo = MaterialTheme.typography.bodyLarge.copy(
-        fontSize = 20.sp, lineHeight = 32.sp, color = MaterialTheme.colorScheme.onSurface,
+        fontSize = tamanho.sp, lineHeight = (tamanho * 1.6f).sp, fontFamily = fonte,
+        color = MaterialTheme.colorScheme.onSurface,
     )
     BoxWithConstraints(modifier.fillMaxSize()) {
         val alturaTela = maxHeight

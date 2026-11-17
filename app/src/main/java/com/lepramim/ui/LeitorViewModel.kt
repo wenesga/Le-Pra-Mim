@@ -136,6 +136,8 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun definirCor(c: CorDestaque) = viewModelScope.launch { repo.definirCor(c) }
     fun definirTema(t: TemaApp) = viewModelScope.launch { repo.definirTema(t) }
+    fun definirTamanho(t: com.lepramim.data.TamanhoTexto) = viewModelScope.launch { repo.definirTamanho(t) }
+    fun definirFonte(f: com.lepramim.data.FonteTexto) = viewModelScope.launch { repo.definirFonte(f) }
     fun definirMarkdown(m: Boolean) = viewModelScope.launch { repo.definirMarkdown(m); aplicar() }
 
     /** Guarda um filtro novo. Devolve a mensagem de erro se a expressão for inválida ou repetida; null se deu certo. */

@@ -74,6 +74,7 @@ import com.lepramim.ui.componentes.LinhaSwitch
 import com.lepramim.ui.componentes.Pagina
 import com.lepramim.ui.componentes.Secao
 import com.lepramim.ui.theme.Espaco
+import com.lepramim.ui.theme.familia
 import com.lepramim.ui.theme.amostraDe
 import com.lepramim.ui.theme.nomeDaCor
 import java.util.Locale
@@ -305,6 +306,32 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                         onClick = { vm.definirTema(tema) },
                         shape = SegmentedButtonDefaults.itemShape(i, temas.size),
                     ) { Text(nome) }
+                }
+            }
+        }
+        Secao("Texto") {
+            val tamanhos = com.lepramim.data.TamanhoTexto.entries
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                tamanhos.forEachIndexed { i, t ->
+                    SegmentedButton(
+                        selected = prefs.tamanho == t,
+                        onClick = { vm.definirTamanho(t) },
+                        shape = SegmentedButtonDefaults.itemShape(i, tamanhos.size),
+                    ) { Text(t.nome, maxLines = 1) }
+                }
+            }
+            com.lepramim.data.FonteTexto.entries.forEach { f ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { vm.definirFonte(f) }.padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        f.nome, Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = f.familia(),
+                        color = if (f == prefs.fonte) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (f == prefs.fonte) Icon(Icons.Outlined.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
