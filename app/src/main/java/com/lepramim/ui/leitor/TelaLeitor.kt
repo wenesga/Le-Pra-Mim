@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.MoreVert
@@ -76,6 +77,8 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     var vozAberta by rememberSaveable { mutableStateOf(false) }
     var confirmar by rememberSaveable { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
+    // O teclado só abre com a edição ligada; por padrão o texto é só para leitura.
+    var editando by rememberSaveable { mutableStateOf(false) }
 
     val colar: () -> Unit = {
         val t = Leitura.copiado(contexto)
@@ -145,6 +148,12 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                     } else Text(Rota.LEITOR.titulo)
                 },
                 actions = {
+                    IconButton(onClick = { editando = !editando }) {
+                        Icon(
+                            Icons.Outlined.Edit, contentDescription = "Editar",
+                            tint = if (editando) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current,
+                        )
+                    }
                     IconButton(onClick = colar) { Icon(Icons.Outlined.ContentPaste, contentDescription = "Colar") }
                     IconButton(onClick = { navegar(Rota.AJUSTES) }) { Icon(Icons.Outlined.Settings, contentDescription = "Ajustes") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Mais") }
@@ -209,7 +218,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
         snackbarHost = { SnackbarHost(avisos) },
     ) { margens ->
         Editor(
-            texto = texto, trecho = trecho, destacar = prefs.destacar,
+            texto = texto, trecho = trecho, destacar = prefs.destacar, editavel = editando,
             tamanho = prefs.tamanho.sp, fonte = prefs.fonte.familia(),
             aoEditar = { Leitura.editar(contexto, it) },
             aoColar = colar,

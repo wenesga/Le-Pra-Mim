@@ -56,7 +56,7 @@ fun SeletorFonte(atual: FonteTexto, tamanho: Int, aoEscolher: (FonteTexto) -> Un
             Modifier.padding(16.dp),
             fontFamily = atual.familia(),
             fontSize = tamanho.sp,
-            lineHeight = (tamanho * 1.6f).sp,
+            lineHeight = (tamanho * 1.5f).sp,
         )
     }
 
@@ -84,7 +84,7 @@ fun SeletorFonte(atual: FonteTexto, tamanho: Int, aoEscolher: (FonteTexto) -> Un
                             style = MaterialTheme.typography.labelMedium,
                             color = if (escolhida) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Text(AMOSTRA, fontFamily = f.familia(), fontSize = 19.sp, lineHeight = 28.sp)
+                        Text(AMOSTRA, fontFamily = f.familia(), fontSize = 19.sp)
                     }
                 }
             }

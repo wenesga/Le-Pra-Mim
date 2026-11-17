@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -48,6 +49,7 @@ fun Editor(
     texto: String,
     trecho: IntRange?,
     destacar: Boolean,
+    editavel: Boolean,
     tamanho: Int,
     fonte: androidx.compose.ui.text.font.FontFamily,
     aoEditar: (String) -> Unit,
@@ -92,9 +94,14 @@ fun Editor(
     }
 
     val estilo = MaterialTheme.typography.bodyLarge.copy(
-        fontSize = tamanho.sp, lineHeight = (tamanho * 1.6f).sp, fontFamily = fonte,
+        fontSize = tamanho.sp, lineHeight = (tamanho * 1.5f).sp, fontFamily = fonte,
         color = MaterialTheme.colorScheme.onSurface,
     )
+    // Só com a edição ligada o campo pega o foco (e o teclado abre); ao desligar, solta o foco e fecha o teclado.
+    val pedirFoco = remember { androidx.compose.ui.focus.FocusRequester() }
+    val foco = androidx.compose.ui.platform.LocalFocusManager.current
+    LaunchedEffect(editavel) { if (editavel) runCatching { pedirFoco.requestFocus() } else foco.clearFocus() }
+
     BoxWithConstraints(modifier.fillMaxSize()) {
         val alturaTela = maxHeight
         Column(Modifier.fillMaxSize().verticalScroll(rolagem)) {
@@ -106,12 +113,14 @@ fun Editor(
                 visualTransformation = destaque,
                 onTextLayout = { layout = it },
                 // O campo ocupa a tela toda: tocar em qualquer ponto vazio leva o cursor ao fim.
-                modifier = Modifier.fillMaxWidth().heightIn(min = alturaTela).padding(Espaco.gg),
+                readOnly = !editavel,
+                modifier = Modifier.fillMaxWidth().heightIn(min = alturaTela).padding(Espaco.gg)
+                    .focusRequester(pedirFoco),
                 decorationBox = { campo ->
                     Box {
                         if (valor.text.isEmpty()) {
                             Column {
-                                Text("Cole ou digite o texto", style = estilo, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(if (editavel) "Digite ou cole o texto" else "Cole o texto", style = estilo, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(Modifier.size(Espaco.xg))
                                 FilledTonalButton(onClick = aoColar) {
                                     Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))

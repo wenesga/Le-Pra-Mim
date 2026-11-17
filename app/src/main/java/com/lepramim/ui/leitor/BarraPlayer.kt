@@ -4,7 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -53,7 +57,8 @@ fun BarraPlayer(
 
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(
-            Modifier.navigationBarsPadding().padding(horizontal = Espaco.gg).padding(top = Espaco.m, bottom = Espaco.m),
+            // Com o teclado aberto a barra de navegação já está coberta; somar de novo deixava um vão.
+            Modifier.windowInsetsPadding(WindowInsets.navigationBars.exclude(WindowInsets.ime)).padding(horizontal = Espaco.gg).padding(top = Espaco.m, bottom = Espaco.m),
         ) {
             Slider(
                 value = arrastando ?: fracao,
