@@ -4,6 +4,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -79,6 +82,24 @@ object Leitura {
     fun copiarTexto(c: Context) {
         if (_texto.value.isEmpty()) return
         c.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Lê Pra Mim", _texto.value))
+    }
+
+    private var persistindo = false
+
+    /** Guarda o texto num arquivo e o restaura ao abrir; o texto só some com "Limpar". */
+    @Synchronized
+    @OptIn(DelicateCoroutinesApi::class)
+    fun persistir(c: Context) {
+        if (persistindo) return
+        persistindo = true
+        val arquivo = java.io.File(c.applicationContext.filesDir, "texto.txt")
+        if (_texto.value.isEmpty()) runCatching { if (arquivo.exists()) _texto.value = arquivo.readText() }
+        @OptIn(kotlinx.coroutines.FlowPreview::class)
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _texto.debounce(500).collect { t ->
+                runCatching { if (t.isEmpty()) arquivo.delete() else arquivo.writeText(t) }
+            }
+        }
     }
 
     fun limpar(c: Context) {

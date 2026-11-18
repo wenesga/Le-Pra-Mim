@@ -42,6 +42,7 @@ data class Preferencias(
     val chave: String = "",
     val chaveEm: Long = 0L,
     val vozAzure: String = "pt-BR-FranciscaNeural",
+    val favoritas: List<String> = emptyList(),
     val caracteres: Long = 0L,
     val mes: String = "",
     val cor: CorDestaque = CorDestaque.VERDE,
@@ -94,6 +95,7 @@ private object Chaves {
     val chave = stringPreferencesKey("chave")
     val chaveEm = longPreferencesKey("chave_em")
     val vozAzure = stringPreferencesKey("voz_azure")
+    val favoritas = stringPreferencesKey("favoritas")
     val caracteres = longPreferencesKey("caracteres")
     val mes = stringPreferencesKey("mes")
     val cor = stringPreferencesKey("cor")
@@ -122,6 +124,7 @@ class Repositorio(private val contexto: Context) {
             chave = it[Chaves.chave] ?: "",
             chaveEm = it[Chaves.chaveEm] ?: 0L,
             vozAzure = it[Chaves.vozAzure] ?: "pt-BR-FranciscaNeural",
+            favoritas = it[Chaves.favoritas].orEmpty().split('\n').filter { f -> f.isNotEmpty() },
             caracteres = it[Chaves.caracteres] ?: 0L,
             mes = it[Chaves.mes] ?: "",
             cor = runCatching { CorDestaque.valueOf(it[Chaves.cor] ?: "") }.getOrDefault(CorDestaque.VERDE),
@@ -170,6 +173,7 @@ class Repositorio(private val contexto: Context) {
         it[Chaves.monAssinatura] = ""; it[Chaves.portalCaracteres] = 0L; it[Chaves.portalMes] = ""
     }
     suspend fun definirVozAzure(v: String) = contexto.loja.edit { it[Chaves.vozAzure] = v }
+    suspend fun definirFavoritas(f: List<String>) = contexto.loja.edit { it[Chaves.favoritas] = f.joinToString("\n") }
 
     /** Soma os caracteres enviados à Azure no mês (zera ao virar o mês). */
     suspend fun somarCaracteres(n: Int) = contexto.loja.edit {

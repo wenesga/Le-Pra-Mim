@@ -7,10 +7,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -88,7 +92,10 @@ fun LinhaSwitch(titulo: String, marcado: Boolean, aoMudar: (Boolean) -> Unit, re
 /** Lista suspensa de escolha única. `opcoes` são pares (id, nome); a escolhida fica em destaque. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Seletor(rotulo: String, valor: String, opcoes: List<Pair<String, String>>, escolher: (String) -> Unit) {
+fun Seletor(
+    rotulo: String, valor: String, opcoes: List<Pair<String, String>>, escolher: (String) -> Unit,
+    favoritas: List<String>? = null, alternarFavorita: ((String) -> Unit)? = null,
+) {
     var aberto by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = aberto, onExpandedChange = { aberto = it }) {
         OutlinedTextField(
@@ -97,7 +104,11 @@ fun Seletor(rotulo: String, valor: String, opcoes: List<Pair<String, String>>, e
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = aberto) },
             modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
-        ExposedDropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
+        ExposedDropdownMenu(
+            expanded = aberto, onDismissRequest = { aberto = false },
+            // Com estrelas, a lista fica estreita: nome e estrela perto um do outro.
+            modifier = if (favoritas != null) Modifier.width(200.dp) else Modifier,
+        ) {
             opcoes.forEach { (id, nome) ->
                 val atual = nome == valor
                 DropdownMenuItem(
@@ -108,6 +119,18 @@ fun Seletor(rotulo: String, valor: String, opcoes: List<Pair<String, String>>, e
                             fontWeight = if (atual) FontWeight.Bold else null,
                         )
                     },
+                    trailingIcon = if (favoritas != null && alternarFavorita != null) {
+                        {
+                            val fav = id in favoritas
+                            IconButton(onClick = { alternarFavorita(id) }) {
+                                Icon(
+                                    if (fav) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                    contentDescription = "Favorita",
+                                    tint = if (fav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else null,
                     onClick = { escolher(id); aberto = false },
                 )
             }

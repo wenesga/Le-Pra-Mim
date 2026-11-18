@@ -38,6 +38,7 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     private var consulta: TextToSpeech? = null
 
     init {
+        Leitura.persistir(app)
         // Carrega sozinho as vozes pt-BR da Azure quando há chave.
         viewModelScope.launch {
             repo.preferencias.map { Triple(it.azure, it.regiao, it.chave) }.distinctUntilChanged().collect { (az, reg, ch) ->
@@ -89,6 +90,10 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun definirRegiao(r: String) = viewModelScope.launch { repo.definirRegiao(r) }
     fun definirVozAzure(v: String) = viewModelScope.launch { repo.definirVozAzure(v); aplicar() }
+    fun alternarFavorita(id: String) = viewModelScope.launch {
+        val f = prefs.value.favoritas
+        repo.definirFavoritas(if (id in f) f - id else f + id)
+    }
     fun colarChave(c: String) = viewModelScope.launch { repo.definirChave(c); _mensagem.value = "" }
     fun removerChave() = viewModelScope.launch { repo.definirChave(""); _vozesAzure.value = emptyList(); _mensagem.value = "" }
 
@@ -162,12 +167,46 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     val aviso: StateFlow<String?> = _aviso
     fun avisoLido() { _aviso.value = null }
 
+    /** Texto corrido de um .docx: um parágrafo por linha em branco, sem formatação. */
+    private fun textoDoDocx(bytes: ByteArray): String {
+        java.util.zip.ZipInputStream(bytes.inputStream()).use { zip ->
+            while (true) {
+                val e = zip.nextEntry ?: break
+                if (e.name != "word/document.xml") continue
+                val p = android.util.Xml.newPullParser()
+                p.setInput(zip, "UTF-8")
+                val sb = StringBuilder()
+                var dentro = false
+                var ev = p.eventType
+                while (ev != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
+                    when (ev) {
+                        org.xmlpull.v1.XmlPullParser.START_TAG -> when (p.name) {
+                            "t" -> dentro = true
+                            "tab" -> sb.append(' ')
+                            "br" -> sb.append('\n')
+                        }
+                        org.xmlpull.v1.XmlPullParser.TEXT -> if (dentro) sb.append(p.text)
+                        org.xmlpull.v1.XmlPullParser.END_TAG -> when (p.name) {
+                            "t" -> dentro = false
+                            "p" -> sb.append("\n\n")
+                        }
+                    }
+                    ev = p.next()
+                }
+                return sb.toString().replace(Regex("\n{3,}"), "\n\n").trim()
+            }
+        }
+        error("sem texto")
+    }
+
     /** Lê um arquivo TXT e põe o conteúdo no editor. Aceita UTF-8 e, se não for, Windows-1252 (TXT antigo). */
     fun importar(origem: Uri) {
         viewModelScope.launch {
             val texto = withContext(Dispatchers.IO) {
                 runCatching {
                     val bytes = getApplication<Application>().contentResolver.openInputStream(origem)!!.use { it.readBytes() }
+                    // .docx é um zip (começa com "PK"); o texto fica em word/document.xml.
+                    if (bytes.size > 3 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'K'.code.toByte()) return@runCatching textoDoDocx(bytes)
                     val utf8 = Charsets.UTF_8.newDecoder()
                         .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
                         .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)

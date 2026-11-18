@@ -60,6 +60,7 @@ class LeituraServico : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Leitura.persistir(this)
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CANAL, "Leitura", NotificationManager.IMPORTANCE_LOW),
         )

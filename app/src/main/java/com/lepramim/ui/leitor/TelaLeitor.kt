@@ -3,6 +3,7 @@ package com.lepramim.ui.leitor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -130,7 +131,10 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                             )
                             // Um toque na voz já troca, e a leitura continua do ponto em que estava.
                             DropdownMenu(expanded = vozAberta, onDismissRequest = { vozAberta = false }) {
-                                opcoes.forEach { (id, nome) ->
+                                // Só as favoritas (definidas em Ajustes → Voz); sem favoritas, todas.
+                                val lista = opcoes.filter { it.first in prefs.favoritas || it.first == prefs.vozAzure }
+                                    .takeIf { prefs.favoritas.isNotEmpty() } ?: opcoes
+                                lista.forEach { (id, nome) ->
                                     val atual = id == prefs.vozAzure
                                     DropdownMenuItem(
                                         text = {
@@ -162,7 +166,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                         DropdownMenuItem(
                             text = { Text("Importar") },
                             leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) },
-                            onClick = { menu = false; abrirTxt.launch(arrayOf("text/plain")) },
+                            onClick = { menu = false; abrirTxt.launch(arrayOf("text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
                         )
                         DropdownMenuItem(
                             text = { Text("Copiar") }, enabled = temTexto,
@@ -182,22 +186,27 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                     }
                 },
             )
-            if (prefs.azure) {
-                val usados = prefs.portalNoMes ?: prefs.usadosNoMes
-                val cota = com.lepramim.data.Preferencias.COTA_AZURE
-                val perto = usados > cota * 0.9
-                Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)) {
+            val usados = prefs.portalNoMes ?: prefs.usadosNoMes
+            val cota = com.lepramim.data.Preferencias.COTA_AZURE
+            val perto = prefs.azure && usados > cota * 0.9
+            val corTexto = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)) {
+                Row(Modifier.fillMaxWidth()) {
                     Text(
-                        "%,d de %d mil".format(java.util.Locale("pt", "BR"), usados, cota / 1000),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (prefs.azure) "Mês %,d / %d mil".format(java.util.Locale("pt", "BR"), usados, cota / 1000) else "",
+                        style = MaterialTheme.typography.labelMedium, color = corTexto,
+                        modifier = Modifier.weight(1f),
                     )
-                    androidx.compose.material3.LinearProgressIndicator(
-                        progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
-                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                        color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    Text(
+                        if (exportando.isNotEmpty()) "Exportando $exportando" else "Texto %,d".format(java.util.Locale("pt", "BR"), texto.length),
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                if (prefs.azure) androidx.compose.material3.LinearProgressIndicator(
+                    progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
+                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+                    color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                )
             }
             }
             }
@@ -213,6 +222,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                 aoVoltar = { Leitura.comando(contexto, Leitura.ACAO_VOLTAR) },
                 aoAvancar = { Leitura.comando(contexto, Leitura.ACAO_AVANCAR) },
                 aoIr = { Leitura.ir(contexto, it) },
+                velocidade = prefs.velocidade, aoMudarVelocidade = vm::definirVelocidade,
             )
         },
         snackbarHost = { SnackbarHost(avisos) },

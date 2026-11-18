@@ -72,6 +72,8 @@ fun SeletorVozAzure(vm: LeitorViewModel) {
         valor = nomeDaVozAzure(prefs.vozAzure, vozes.map { it.id to it.nome }),
         opcoes = vozes.map { it.id to it.nome }.ifEmpty { VOZES_AZURE_PADRAO },
         escolher = vm::definirVozAzure,
+        favoritas = prefs.favoritas,
+        alternarFavorita = vm::alternarFavorita,
     )
 }
 
