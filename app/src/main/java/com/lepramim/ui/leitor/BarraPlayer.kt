@@ -3,6 +3,12 @@ package com.lepramim.ui.leitor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -114,7 +120,11 @@ fun BarraPlayer(
                     }
                 }
             }
-            if (expandido) {
+            AnimatedVisibility(
+                visible = expandido,
+                enter = expandVertically(tween(250)) + fadeIn(tween(250)),
+                exit = shrinkVertically(tween(250)) + fadeOut(tween(200)),
+            ) { Column {
                 var valor by remember(velocidade) { mutableStateOf(velocidade) }
                 Text(
                     "Velocidade: " + formatarVelocidade(valor),
@@ -135,7 +145,7 @@ fun BarraPlayer(
                         Icon(Icons.Outlined.ChevronRight, contentDescription = "Mais rápido")
                     }
                 }
-            }
+            } }
         }
     }
 }
