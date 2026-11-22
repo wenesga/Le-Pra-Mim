@@ -379,7 +379,7 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                 CorDestaque.entries.forEach { opcao ->
                     val escolhida = opcao == prefs.cor
                     Box(
-                        Modifier.size(44.dp).background(amostraDe(opcao, escuroAgora), CircleShape)
+                        Modifier.size(44.dp).background(amostraDe(opcao, escuroAgora, androidx.compose.ui.platform.LocalContext.current), CircleShape)
                             .then(if (escolhida) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
                             .clickable { vm.definirCor(opcao) },
                     ) {}

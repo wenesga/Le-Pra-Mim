@@ -12,15 +12,21 @@ import kotlinx.coroutines.flow.map
 
 /** Cor de destaque do app (padrão dos apps do Wenes). */
 enum class CorDestaque(
+    /** Tom claro: texto, links e ícones no escuro. */
     val hex: Long, val nome: String,
-    val claro: Long, val conteinerClaro: Long, val noConteinerClaro: Long, val inversaClara: Long,
+    /** Tom forte no tema claro (botões, texto branco por cima). */
+    val claro: Long,
+    /** Tom forte no tema escuro (botões e seleções, texto branco por cima). */
+    val forteEscuro: Long,
 ) {
-    AZUL(0xFF60A5FA, "Azul", 0xFF3D7FEF, 0xFFC2D7FF, 0xFF041E49, 0xFF8AB4F8),
-    VERDE(0xFF4ADE80, "Verde", 0xFF0E9F6E, 0xFF7DF9C4, 0xFF002114, 0xFF5EE0A8),
-    ROXO(0xFFB794F6, "Roxo", 0xFF8E6BD6, 0xFFE9DDFF, 0xFF22005C, 0xFFD0BCFF),
-    CIANO(0xFF22D3EE, "Ciano", 0xFF1FB1C9, 0xFFA6EEFF, 0xFF001F26, 0xFF5DD7F0),
-    AMBAR(0xFFFBBF24, "Âmbar", 0xFFE0B23A, 0xFFFFE08A, 0xFF261A00, 0xFFF2C33C),
-    ROSA(0xFFFB7185, "Rosa", 0xFFD9638A, 0xFFFFD9E3, 0xFF3E001D, 0xFFFFB1C8),
+    AZUL(0xFF60A5FA, "Azul", 0xFF3D7FEF, 0xFF2F6FEB),
+    VERDE(0xFF4ADE80, "Verde", 0xFF0E9F6E, 0xFF0E9F6E),
+    ROXO(0xFFB794F6, "Roxo", 0xFF8E6BD6, 0xFF8E6BD6),
+    TURQUESA(0xFF4DB6AC, "Turquesa", 0xFF1F8F85, 0xFF1F8F85),
+    LARANJA(0xFFF4A261, "Laranja", 0xFFD9803A, 0xFFD9803A),
+    ROSA(0xFFFB7185, "Rosa", 0xFFD9638A, 0xFFD9638A),
+    /** Android 12+: cor do papel de parede; os valores são só reserva. */
+    AUTOMATICA(0xFF888888, "Automática", 0xFF888888, 0xFF888888),
 }
 
 /** Fundo do tema escuro (as variações do Ciclo Treino; independe da cor de destaque). */

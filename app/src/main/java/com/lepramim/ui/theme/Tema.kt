@@ -1,19 +1,21 @@
 package com.lepramim.ui.theme
 
 import android.app.Activity
+import android.content.Context
+import android.os.Build
+import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.lepramim.data.CorDestaque
@@ -73,55 +75,68 @@ private fun fundoDe(f: FundoEscuro) = when (f) {
     FundoEscuro.ROXO_PROFUNDO -> derivado(0xFF14101D)
 }
 
-private fun escuroDe(f: FundoEscuro, a: Color): ColorScheme {
+/** Tons de uma cor: texto/ícones no escuro (claro) e botão (forte). A Automática vem do papel de parede. */
+private class Tons(val texto: Color, val forte: Color)
+
+private fun tonsDe(c: CorDestaque, escuro: Boolean, contexto: Context): Tons {
+    if (c == CorDestaque.AUTOMATICA && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val forte = Color(contexto.getColor(android.R.color.system_accent1_600))
+        val vivo = destaqueVivo(contexto.getColor(android.R.color.system_accent1_300))
+        return Tons(if (escuro) vivo else forte, forte)
+    }
+    return Tons(Color(c.hex), Color(if (escuro) c.forteEscuro else c.claro))
+}
+
+/** Mesma cor do papel de parede, mais viva e de brilho médio, para o texto aparecer no escuro. */
+private fun destaqueVivo(cor: Int): Color {
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(cor, hsl)
+    hsl[1] = maxOf(hsl[1], 0.85f)
+    hsl[2] = 0.72f
+    return Color(ColorUtils.HSLToColor(hsl))
+}
+
+private fun escuroDe(f: FundoEscuro, t: Tons): ColorScheme {
     val d = fundoDe(f)
     val fundo = Color(d.fundo)
+    val a = t.texto
     return EsquemaEscuro.copy(
         background = fundo, surface = fundo, surfaceDim = fundo,
         surfaceContainerLowest = Color(d.baixissimo), surfaceContainerLow = Color(d.baixo),
         surfaceContainer = Color(d.medio), surfaceContainerHigh = Color(d.alto),
         surfaceContainerHighest = Color(d.altissimo), surfaceBright = Color(d.brilho),
         surfaceVariant = Color(d.variante), outlineVariant = Color(d.variante),
-        secondary = Color(0xFFC4C6CA), onSecondary = Color(0xFF2D3033),
-        secondaryContainer = Color(d.altissimo), onSecondaryContainer = Color(d.naSecundaria),
+        secondary = t.forte, onSecondary = Color.White,
+        secondaryContainer = t.forte, onSecondaryContainer = Color.White,
         onBackground = Color(d.texto), onSurface = Color(d.texto), onSurfaceVariant = Color(d.textoVariante),
         outline = Color(0xFF8E9195),
-        primary = a, onPrimary = lerp(fundo, Color.Black, 0.5f),
-        primaryContainer = lerp(fundo, a, 0.35f), onPrimaryContainer = lerp(a, Color.White, 0.85f),
-        tertiary = lerp(a, Color.White, 0.35f), onTertiary = lerp(fundo, Color.Black, 0.5f),
-        tertiaryContainer = lerp(fundo, a, 0.22f), onTertiaryContainer = lerp(a, Color.White, 0.9f),
-        inversePrimary = lerp(a, Color.Black, 0.3f),
+        // Texto e ícones: tom claro. Botões e seleções: tom forte com texto branco.
+        primary = a, onPrimary = Color(0xFF101418),
+        primaryContainer = t.forte, onPrimaryContainer = Color.White,
+        tertiary = a, onTertiary = Color(0xFF101418),
+        tertiaryContainer = t.forte, onTertiaryContainer = Color.White,
+        inversePrimary = t.forte,
     )
 }
 
-/** No claro, os tons do Ciclo Treino (cor cheia, texto branco por cima). */
-private fun claroDe(c: CorDestaque) = BaseClara.copy(
-    primary = Color(c.claro), onPrimary = Color.White,
-    primaryContainer = Color(c.conteinerClaro), onPrimaryContainer = Color(c.noConteinerClaro),
-    tertiary = Color(c.claro), onTertiary = Color.White,
-    tertiaryContainer = Color(c.conteinerClaro), onTertiaryContainer = Color(c.noConteinerClaro),
-    inversePrimary = Color(c.inversaClara),
+/** No claro, só o tom forte, com texto branco por cima. */
+private fun claroDe(t: Tons) = BaseClara.copy(
+    primary = t.forte, onPrimary = Color.White,
+    primaryContainer = t.forte, onPrimaryContainer = Color.White,
+    tertiary = t.forte, onTertiary = Color.White,
+    tertiaryContainer = t.forte, onTertiaryContainer = Color.White,
+    secondary = t.forte, onSecondary = Color.White,
+    secondaryContainer = t.forte, onSecondaryContainer = Color.White,
+    inversePrimary = t.texto,
 )
 
-/** Cor da bolinha na escolha do destaque. */
-fun amostraDe(cor: CorDestaque, escuro: Boolean): Color = Color(if (escuro) cor.hex else cor.claro)
+/** Cor da bolinha na escolha do destaque: o tom do botão no modo atual (Automática: a do papel de parede). */
+fun amostraDe(cor: CorDestaque, escuro: Boolean, contexto: Context): Color = tonsDe(cor, escuro, contexto).forte
 
 fun nomeDaCor(cor: CorDestaque) = cor.nome
 
 /** Cor da bolinha na escolha do fundo escuro. */
 fun amostraDoFundo(f: FundoEscuro): Color = Color(fundoDe(f).let { if (f == FundoEscuro.PRETO) it.fundo else it.baixo })
-
-private val base = Typography()
-
-private val Tipografia = Typography(
-    displayLarge = base.displayLarge.copy(fontWeight = FontWeight.SemiBold),
-    displayMedium = base.displayMedium.copy(fontWeight = FontWeight.SemiBold),
-    displaySmall = base.displaySmall.copy(fontWeight = FontWeight.SemiBold),
-    headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
-    headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-    headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Medium),
-)
 
 private val Formas = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -156,6 +171,7 @@ fun TemaLeitor(cor: CorDestaque, tema: TemaApp, fundo: FundoEscuro, content: @Co
             }
         }
     }
-    val esquema = if (escuro) escuroDe(fundo, Color(cor.hex)) else claroDe(cor)
-    MaterialTheme(colorScheme = esquema, typography = Tipografia, shapes = Formas, content = content)
+    val tons = tonsDe(cor, escuro, LocalContext.current)
+    val esquema = if (escuro) escuroDe(fundo, tons) else claroDe(tons)
+    MaterialTheme(colorScheme = esquema, shapes = Formas, content = content)
 }
