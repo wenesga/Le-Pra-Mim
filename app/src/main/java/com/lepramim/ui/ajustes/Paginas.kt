@@ -360,11 +360,11 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
             val escuroAgora = prefs.tema == TemaApp.ESCURO || (prefs.tema == TemaApp.SISTEMA && androidx.compose.foundation.isSystemInDarkTheme())
             if (escuroAgora) {
                 Text("Fundo escuro · " + prefs.fundo.nome, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     FundoEscuro.entries.forEach { opcao ->
                         val escolhida = opcao == prefs.fundo
                         Box(
-                            Modifier.weight(1f).aspectRatio(1f).background(amostraDoFundo(opcao), CircleShape)
+                            Modifier.size(40.dp).background(amostraDoFundo(opcao), CircleShape)
                                 .border(
                                     if (escolhida) 3.dp else 1.dp,
                                     if (escolhida) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
@@ -380,7 +380,7 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                 CorDestaque.entries.filter { it != CorDestaque.AUTOMATICA || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S }.forEach { opcao ->
                     val escolhida = opcao == prefs.cor
                     Box(
-                        Modifier.size(44.dp).background(amostraDe(opcao, escuroAgora, androidx.compose.ui.platform.LocalContext.current), CircleShape)
+                        Modifier.size(40.dp).background(amostraDe(opcao, escuroAgora, androidx.compose.ui.platform.LocalContext.current), CircleShape)
                             .then(if (escolhida) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
                             .clickable { vm.definirCor(opcao) },
                         contentAlignment = Alignment.Center,
