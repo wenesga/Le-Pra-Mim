@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import android.net.Uri
 import com.lepramim.data.CorDestaque
+import com.lepramim.data.FundoEscuro
 import com.lepramim.data.Preferencias
 import com.lepramim.data.TemaApp
 import com.lepramim.leitura.LeituraServico
@@ -139,6 +140,7 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun definirFundo(f: FundoEscuro) = viewModelScope.launch { repo.definirFundo(f) }
     fun definirCor(c: CorDestaque) = viewModelScope.launch { repo.definirCor(c) }
     fun definirTema(t: TemaApp) = viewModelScope.launch { repo.definirTema(t) }
     fun definirTamanho(t: com.lepramim.data.TamanhoTexto) = viewModelScope.launch { repo.definirTamanho(t) }

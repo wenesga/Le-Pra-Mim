@@ -26,6 +26,10 @@ fun AppLeitor(vm: LeitorViewModel) {
     val aviso by vm.aviso.collectAsStateWithLifecycle()
     LaunchedEffect(aviso) { aviso?.let { avisos.showSnackbar(it); vm.avisoLido() } }
 
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_START) { com.lepramim.leitura.Leitura.appVisivel = true }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_STOP) { com.lepramim.leitura.Leitura.appVisivel = false }
+    LaunchedEffect(Unit) { com.lepramim.leitura.Leitura.avisos.collect { avisos.showSnackbar(it) } }
+
     // Cada vez que o app volta para a frente, busca de novo o consumo do portal.
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
         val p = vm.prefs.value

@@ -10,8 +10,24 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** Cor de destaque do app (as mesmas do Escala de Trabalho, sem o roxo). */
-enum class CorDestaque { AZUL, TURQUESA, LARANJA, VERMELHO, VERDE, CINZA }
+/** Cor de destaque do app (padrão dos apps do Wenes). */
+enum class CorDestaque(
+    val hex: Long, val nome: String,
+    val claro: Long, val conteinerClaro: Long, val noConteinerClaro: Long, val inversaClara: Long,
+) {
+    AZUL(0xFF60A5FA, "Azul", 0xFF3D7FEF, 0xFFC2D7FF, 0xFF041E49, 0xFF8AB4F8),
+    VERDE(0xFF4ADE80, "Verde", 0xFF0E9F6E, 0xFF7DF9C4, 0xFF002114, 0xFF5EE0A8),
+    ROXO(0xFFB794F6, "Roxo", 0xFF8E6BD6, 0xFFE9DDFF, 0xFF22005C, 0xFFD0BCFF),
+    CIANO(0xFF22D3EE, "Ciano", 0xFF1FB1C9, 0xFFA6EEFF, 0xFF001F26, 0xFF5DD7F0),
+    AMBAR(0xFFFBBF24, "Âmbar", 0xFFE0B23A, 0xFFFFE08A, 0xFF261A00, 0xFFF2C33C),
+    ROSA(0xFFFB7185, "Rosa", 0xFFD9638A, 0xFFFFD9E3, 0xFF3E001D, 0xFFFFB1C8),
+}
+
+/** Fundo do tema escuro (as variações do Ciclo Treino; independe da cor de destaque). */
+enum class FundoEscuro(val nome: String) {
+    PRETO("Preto"), VINHO_PROFUNDO("Vinho profundo"), GRAFITE("Grafite"), PETROLEO("Petróleo"),
+    MARINHO("Marinho"), VERDE_PROFUNDO("Verde profundo"), ROXO_PROFUNDO("Roxo profundo"),
+}
 
 /** Tema do app: segue o sistema ou fica fixo. */
 enum class TemaApp { SISTEMA, CLARO, ESCURO }
@@ -47,6 +63,7 @@ data class Preferencias(
     val mes: String = "",
     val cor: CorDestaque = CorDestaque.VERDE,
     val tema: TemaApp = TemaApp.SISTEMA,
+    val fundo: FundoEscuro = FundoEscuro.MARINHO,
     val markdown: Boolean = true,
     val tamanho: TamanhoTexto = TamanhoTexto.MEDIO,
     val fonte: FonteTexto = FonteTexto.PADRAO,
@@ -100,6 +117,7 @@ private object Chaves {
     val mes = stringPreferencesKey("mes")
     val cor = stringPreferencesKey("cor")
     val tema = stringPreferencesKey("tema")
+    val fundo = stringPreferencesKey("fundo")
     val markdown = booleanPreferencesKey("markdown")
     val tamanho = stringPreferencesKey("tamanho")
     val fonte = stringPreferencesKey("fonte")
@@ -128,7 +146,8 @@ class Repositorio(private val contexto: Context) {
             caracteres = it[Chaves.caracteres] ?: 0L,
             mes = it[Chaves.mes] ?: "",
             cor = runCatching { CorDestaque.valueOf(it[Chaves.cor] ?: "") }.getOrDefault(CorDestaque.VERDE),
-            tema = runCatching { TemaApp.valueOf(it[Chaves.tema] ?: "") }.getOrDefault(TemaApp.SISTEMA),
+            tema = runCatching { TemaApp.valueOf(it[Chaves.tema] ?: "") }.getOrDefault(if (it[Chaves.tema] == "PRETO") TemaApp.ESCURO else TemaApp.SISTEMA),
+            fundo = runCatching { FundoEscuro.valueOf(it[Chaves.fundo] ?: "") }.getOrDefault(FundoEscuro.MARINHO),
             markdown = it[Chaves.markdown] ?: true,
             tamanho = runCatching { TamanhoTexto.valueOf(it[Chaves.tamanho] ?: "") }.getOrDefault(TamanhoTexto.MEDIO),
             fonte = runCatching { FonteTexto.valueOf(it[Chaves.fonte] ?: "") }.getOrDefault(FonteTexto.PADRAO),
@@ -148,6 +167,7 @@ class Repositorio(private val contexto: Context) {
     suspend fun definirVelocidade(v: Float) = contexto.loja.edit { it[Chaves.velocidade] = v }
     suspend fun definirDestacar(d: Boolean) = contexto.loja.edit { it[Chaves.destacar] = d }
     suspend fun definirCor(c: CorDestaque) = contexto.loja.edit { it[Chaves.cor] = c.name }
+    suspend fun definirFundo(f: FundoEscuro) = contexto.loja.edit { it[Chaves.fundo] = f.name }
     suspend fun definirTema(t: TemaApp) = contexto.loja.edit { it[Chaves.tema] = t.name }
     suspend fun definirTamanho(t: TamanhoTexto) = contexto.loja.edit { it[Chaves.tamanho] = t.name }
     suspend fun definirFonte(f: FonteTexto) = contexto.loja.edit { it[Chaves.fonte] = f.name }

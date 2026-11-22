@@ -17,6 +17,15 @@ object Azure {
         else -> "Erro da Azure ($codigo)."
     }
 
+    /** Versão curta para o aviso flutuante, que o sistema corta em duas linhas. */
+    fun mensagemCurta(codigo: Int) = when (codigo) {
+        401 -> "Chave recusada."
+        403 -> "Cota ou recurso da Azure."
+        429 -> "Muitas chamadas."
+        0 -> "Sem internet."
+        else -> "Erro da Azure."
+    }
+
     private fun abrir(url: String, chave: String): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 10000; readTimeout = 20000

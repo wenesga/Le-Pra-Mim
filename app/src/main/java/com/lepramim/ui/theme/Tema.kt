@@ -10,11 +10,14 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.lepramim.data.CorDestaque
+import com.lepramim.data.FundoEscuro
 import com.lepramim.data.TemaApp
 
 // Mesmo visual do Escala de Trabalho: base neutra no claro, azul-marinho no escuro, destaque à escolha.
@@ -43,105 +46,70 @@ private val BaseEscura = EsquemaEscuro.copy(
     outline = Color(0xFF8E9195),
 )
 
-private class Destaque(
-    val primaria: Color, val naPrimaria: Color,
-    val conteiner: Color, val noConteiner: Color,
-    val terciaria: Color, val naTerciaria: Color,
-    val terciarioConteiner: Color, val noTerciarioConteiner: Color,
-    val inversa: Color,
+/** Fundo e cartões de cada variação do escuro (os mesmos do Ciclo Treino). */
+private class Fundo(
+    val fundo: Long, val baixissimo: Long, val baixo: Long, val medio: Long, val alto: Long, val altissimo: Long,
+    val brilho: Long, val variante: Long, val naSecundaria: Long, val texto: Long, val textoVariante: Long,
 )
 
-private fun ColorScheme.com(d: Destaque) = copy(
-    primary = d.primaria, onPrimary = d.naPrimaria,
-    primaryContainer = d.conteiner, onPrimaryContainer = d.noConteiner,
-    tertiary = d.terciaria, onTertiary = d.naTerciaria,
-    tertiaryContainer = d.terciarioConteiner, onTertiaryContainer = d.noTerciarioConteiner,
-    inversePrimary = d.inversa,
-)
-
-private val Branco = Color.White
-
-private val AzulClaro = BaseClara.com(Destaque(
-    Color(0xFF4C7FD8), Branco, Color(0xFFD6E4FF), Color(0xFF0B2A5C),
-    Color(0xFF0061A4), Branco, Color(0xFFCFE5FF), Color(0xFF001D36), Color(0xFF8AB4F8),
-))
-private val AzulEscuro = BaseEscura.com(Destaque(
-    Color(0xFF3D7FEF), Branco, Color(0xFF1A5BC4), Color(0xFFE0EBFF),
-    Color(0xFF9CCAFF), Color(0xFF003258), Color(0xFF1F5D96), Color(0xFFD5E8FF), Color(0xFF0B57D0),
-))
-
-private val TurquesaClaro = BaseClara.com(Destaque(
-    Color(0xFF3A98B3), Branco, Color(0xFFCFEFF7), Color(0xFF062C38),
-    Color(0xFF00687F), Branco, Color(0xFFBDEEFA), Color(0xFF001F28), Color(0xFF7FD0E6),
-))
-private val TurquesaEscuro = BaseEscura.com(Destaque(
-    Color(0xFF2AA6C0), Branco, Color(0xFF0F6B80), Color(0xFFC4F1FF),
-    Color(0xFF8EDCF0), Color(0xFF00343F), Color(0xFF0B5565), Color(0xFFC4F1FF), Color(0xFF00789A),
-))
-
-private val LaranjaClaro = BaseClara.com(Destaque(
-    Color(0xFFC58A4F), Branco, Color(0xFFFBE2C6), Color(0xFF3A2005),
-    Color(0xFF9A4A00), Branco, Color(0xFFFFDBC2), Color(0xFF311300), Color(0xFFFFA654),
-))
-private val LaranjaEscuro = BaseEscura.com(Destaque(
-    Color(0xFFD08A45), Branco, Color(0xFF94601F), Color(0xFFFFE6CF),
-    Color(0xFFFFC27A), Color(0xFF4A2800), Color(0xFF8A4F00), Color(0xFFFFE2C2), Color(0xFFB45309),
-))
-
-private val VermelhoClaro = BaseClara.com(Destaque(
-    Color(0xFFC86A63), Branco, Color(0xFFFADAD6), Color(0xFF4A1511),
-    Color(0xFF9C4336), Branco, Color(0xFFFFDAD4), Color(0xFF3B0906), Color(0xFFFFB4A8),
-))
-private val VermelhoEscuro = BaseEscura.com(Destaque(
-    Color(0xFFD0645A), Branco, Color(0xFF9A3C34), Color(0xFFFFDAD4),
-    Color(0xFFFFB4A8), Color(0xFF561E17), Color(0xFF8C3A2F), Color(0xFFFFDAD4), Color(0xFFC8372B),
-))
-
-private val VerdeClaro = BaseClara.com(Destaque(
-    Color(0xFF6A9E4D), Branco, Color(0xFFDDF0CE), Color(0xFF14290A),
-    Color(0xFF5E6B00), Branco, Color(0xFFE6F57A), Color(0xFF1B2100), Color(0xFF8FD36A),
-))
-private val VerdeEscuro = BaseEscura.com(Destaque(
-    Color(0xFF6FAE4A), Branco, Color(0xFF3F7226), Color(0xFFE0FFCB),
-    Color(0xFFD4E97A), Color(0xFF2A3800), Color(0xFF4A5F10), Color(0xFFEEFFB0), Color(0xFF4C8A2B),
-))
-
-private val CinzaClaro = BaseClara.com(Destaque(
-    Color(0xFF5F6368), Branco, Color(0xFFDADCE0), Color(0xFF1B1C1E),
-    Color(0xFF5F6368), Branco, Color(0xFFE8EAED), Color(0xFF1B1C1E), Color(0xFFDADCE0),
-))
-private val CinzaEscuro = BaseEscura.com(Destaque(
-    Color(0xFFE3E5E8), Color(0xFF2D3033), Color(0xFF5F6368), Color(0xFFF1F3F4),
-    Color(0xFFBDC1C6), Color(0xFF2D3033), Color(0xFF4A4E52), Color(0xFFE8EAED), Color(0xFF3C4043),
-))
-
-private fun esquemaDe(cor: CorDestaque, escuro: Boolean) = when (cor) {
-    CorDestaque.AZUL -> if (escuro) AzulEscuro else AzulClaro
-    CorDestaque.TURQUESA -> if (escuro) TurquesaEscuro else TurquesaClaro
-    CorDestaque.LARANJA -> if (escuro) LaranjaEscuro else LaranjaClaro
-    CorDestaque.VERMELHO -> if (escuro) VermelhoEscuro else VermelhoClaro
-    CorDestaque.VERDE -> if (escuro) VerdeEscuro else VerdeClaro
-    CorDestaque.CINZA -> if (escuro) CinzaEscuro else CinzaClaro
+/** Fundo bem escuro com cartões calculados a partir dele (grafite, verde e roxo profundos). */
+private fun derivado(bg: Long): Fundo {
+    val c = Color(bg)
+    fun m(alvo: Color, x: Float) = lerp(c, alvo, x).toArgb().toLong() and 0xFFFFFFFFL
+    return Fundo(
+        bg, m(Color.Black, 0.3f), m(Color.White, 0.04f), m(Color.White, 0.07f), m(Color.White, 0.11f),
+        m(Color.White, 0.15f), m(Color.White, 0.2f), m(Color.White, 0.15f),
+        0xFFF2F4F8, 0xFFF2F4F8, 0xFFC5CAD6,
+    )
 }
+
+private fun fundoDe(f: FundoEscuro) = when (f) {
+    FundoEscuro.VINHO_PROFUNDO -> derivado(0xFF1A1113)
+    FundoEscuro.PRETO -> Fundo(0xFF000000, 0xFF000000, 0xFF141516, 0xFF18191B, 0xFF212225, 0xFF2B2C30, 0xFF333438, 0xFF2B2C30, 0xFFE8EAED, 0xFFE3E3E5, 0xFFC4C6CA)
+    FundoEscuro.GRAFITE -> derivado(0xFF121416)
+    FundoEscuro.PETROLEO -> Fundo(0xFF22272B, 0xFF1C2125, 0xFF273238, 0xFF2C383E, 0xFF354249, 0xFF3F4D54, 0xFF465560, 0xFF3F4D54, 0xFFE6EEF1, 0xFFECF1F3, 0xFFB9C5CA)
+    FundoEscuro.MARINHO -> Fundo(0xFF171A26, 0xFF12141D, 0xFF252A39, 0xFF1F2330, 0xFF2E3447, 0xFF3A4155, 0xFF444C62, 0xFF3A4155, 0xFFF2F4F8, 0xFFF2F4F8, 0xFFC5CAD6)
+    FundoEscuro.VERDE_PROFUNDO -> derivado(0xFF0B1512)
+    FundoEscuro.ROXO_PROFUNDO -> derivado(0xFF14101D)
+}
+
+private fun escuroDe(f: FundoEscuro, a: Color): ColorScheme {
+    val d = fundoDe(f)
+    val fundo = Color(d.fundo)
+    return EsquemaEscuro.copy(
+        background = fundo, surface = fundo, surfaceDim = fundo,
+        surfaceContainerLowest = Color(d.baixissimo), surfaceContainerLow = Color(d.baixo),
+        surfaceContainer = Color(d.medio), surfaceContainerHigh = Color(d.alto),
+        surfaceContainerHighest = Color(d.altissimo), surfaceBright = Color(d.brilho),
+        surfaceVariant = Color(d.variante), outlineVariant = Color(d.variante),
+        secondary = Color(0xFFC4C6CA), onSecondary = Color(0xFF2D3033),
+        secondaryContainer = Color(d.altissimo), onSecondaryContainer = Color(d.naSecundaria),
+        onBackground = Color(d.texto), onSurface = Color(d.texto), onSurfaceVariant = Color(d.textoVariante),
+        outline = Color(0xFF8E9195),
+        primary = a, onPrimary = lerp(fundo, Color.Black, 0.5f),
+        primaryContainer = lerp(fundo, a, 0.35f), onPrimaryContainer = lerp(a, Color.White, 0.85f),
+        tertiary = lerp(a, Color.White, 0.35f), onTertiary = lerp(fundo, Color.Black, 0.5f),
+        tertiaryContainer = lerp(fundo, a, 0.22f), onTertiaryContainer = lerp(a, Color.White, 0.9f),
+        inversePrimary = lerp(a, Color.Black, 0.3f),
+    )
+}
+
+/** No claro, os tons do Ciclo Treino (cor cheia, texto branco por cima). */
+private fun claroDe(c: CorDestaque) = BaseClara.copy(
+    primary = Color(c.claro), onPrimary = Color.White,
+    primaryContainer = Color(c.conteinerClaro), onPrimaryContainer = Color(c.noConteinerClaro),
+    tertiary = Color(c.claro), onTertiary = Color.White,
+    tertiaryContainer = Color(c.conteinerClaro), onTertiaryContainer = Color(c.noConteinerClaro),
+    inversePrimary = Color(c.inversaClara),
+)
 
 /** Cor da bolinha na escolha do destaque. */
-fun amostraDe(cor: CorDestaque): Color = when (cor) {
-    CorDestaque.AZUL -> Color(0xFF3D7FEF)
-    CorDestaque.TURQUESA -> Color(0xFF2AA6C0)
-    CorDestaque.LARANJA -> Color(0xFFD08A45)
-    CorDestaque.VERMELHO -> Color(0xFFD0645A)
-    CorDestaque.VERDE -> Color(0xFF6FAE4A)
-    CorDestaque.CINZA -> Color(0xFFBDC1C6)
-}
+fun amostraDe(cor: CorDestaque, escuro: Boolean): Color = Color(if (escuro) cor.hex else cor.claro)
 
-fun nomeDaCor(cor: CorDestaque) = when (cor) {
-    CorDestaque.AZUL -> "Azul"
-    CorDestaque.TURQUESA -> "Turquesa"
-    CorDestaque.LARANJA -> "Laranja"
-    CorDestaque.VERMELHO -> "Vermelho"
-    CorDestaque.VERDE -> "Verde"
-    CorDestaque.CINZA -> "Cinza"
-}
+fun nomeDaCor(cor: CorDestaque) = cor.nome
+
+/** Cor da bolinha na escolha do fundo escuro. */
+fun amostraDoFundo(f: FundoEscuro): Color = Color(fundoDe(f).let { if (f == FundoEscuro.PRETO) it.fundo else it.baixo })
 
 private val base = Typography()
 
@@ -173,7 +141,7 @@ object Espaco {
 }
 
 @Composable
-fun TemaLeitor(cor: CorDestaque, tema: TemaApp, content: @Composable () -> Unit) {
+fun TemaLeitor(cor: CorDestaque, tema: TemaApp, fundo: FundoEscuro, content: @Composable () -> Unit) {
     val escuro = when (tema) {
         TemaApp.SISTEMA -> isSystemInDarkTheme()
         TemaApp.CLARO -> false
@@ -188,5 +156,6 @@ fun TemaLeitor(cor: CorDestaque, tema: TemaApp, content: @Composable () -> Unit)
             }
         }
     }
-    MaterialTheme(colorScheme = esquemaDe(cor, escuro), typography = Tipografia, shapes = Formas, content = content)
+    val esquema = if (escuro) escuroDe(fundo, Color(cor.hex)) else claroDe(cor)
+    MaterialTheme(colorScheme = esquema, typography = Tipografia, shapes = Formas, content = content)
 }

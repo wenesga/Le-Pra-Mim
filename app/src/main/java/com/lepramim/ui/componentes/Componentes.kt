@@ -35,11 +35,38 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.lepramim.ui.theme.Espaco
+
+/** Avisos na parte de baixo: caixa própria, do tamanho exato do texto, centralizada. */
+@Composable
+fun HostAvisos(avisos: SnackbarHostState) {
+    SnackbarHost(avisos) { dados ->
+        val acao = dados.visuals.actionLabel
+        Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shadowElevation = 6.dp,
+            ) {
+                Row(
+                    Modifier.padding(start = 20.dp, end = if (acao == null) 20.dp else 8.dp, top = if (acao == null) 12.dp else 4.dp, bottom = if (acao == null) 12.dp else 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(dados.visuals.message, style = MaterialTheme.typography.bodyMedium)
+                    if (acao != null) androidx.compose.material3.TextButton(onClick = { dados.performAction() }) {
+                        Text(acao, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
 
 /** Moldura das páginas de Ajustes: barra com seta de voltar e conteúdo rolável. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +86,7 @@ fun Pagina(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(avisos) },
+        snackbarHost = { HostAvisos(avisos) },
     ) { margens ->
         Column(
             Modifier.fillMaxSize().padding(margens).verticalScroll(rememberScrollState()).padding(Espaco.gg),

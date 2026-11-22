@@ -14,6 +14,9 @@ enum class Situacao { PARADO, TOCANDO, PAUSADO }
 
 /** Estado da leitura, compartilhado entre o serviço e a tela. */
 object Leitura {
+    /** Avisos do serviço para a tela (aparecem na cor do tema). Sem tela na frente, o serviço usa o Toast do sistema. */
+    val avisos = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 4)
+    @Volatile var appVisivel = false
     internal val _texto = MutableStateFlow("")
     internal val _trecho = MutableStateFlow<IntRange?>(null)
     internal val _situacao = MutableStateFlow(Situacao.PARADO)

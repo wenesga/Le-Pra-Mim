@@ -159,7 +159,7 @@ class LeituraServico : Service() {
     private fun prepararMotor(depois: () -> Unit) {
         if (prefs.azure) {
             if (prefs.chave.isNotBlank()) { depois(); return }
-            aviso("Sem chave da Azure. Usando a voz do aparelho.")
+            aviso("Sem chave. Voz do aparelho.")
             prefs = prefs.copy(motor = "")
         }
         val motor = prefs.motor
@@ -222,7 +222,9 @@ class LeituraServico : Service() {
     private var proxAzure: Deferred<ByteArray>? = null
     private var player: MediaPlayer? = null
 
-    private fun aviso(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+    private fun aviso(msg: String) {
+        if (!(Leitura.appVisivel && Leitura.avisos.tryEmit(msg))) Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+    }
 
     private fun pararAzure() {
         jobAzure?.cancel(); jobAzure = null
@@ -261,7 +263,7 @@ class LeituraServico : Service() {
                 }
                 encerrar()
             } catch (e: ErroAzure) {
-                aviso(Azure.mensagem(e.codigo) + " Usando a voz do aparelho.")
+                aviso(Azure.mensagemCurta(e.codigo) + " Voz do aparelho.")
                 prefs = prefs.copy(motor = "")
                 prepararMotor { falar() }
             }

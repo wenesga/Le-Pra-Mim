@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +22,9 @@ import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material.icons.outlined.Palette
@@ -65,6 +69,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.atalhos.MarcarTela
 import com.lepramim.data.CorDestaque
+import com.lepramim.data.FundoEscuro
 import com.lepramim.data.Preferencias
 import com.lepramim.data.TemaApp
 import com.lepramim.ui.LeitorViewModel
@@ -75,6 +80,7 @@ import com.lepramim.ui.componentes.Secao
 import com.lepramim.ui.theme.Espaco
 import com.lepramim.ui.theme.familia
 import com.lepramim.ui.theme.amostraDe
+import com.lepramim.ui.theme.amostraDoFundo
 import com.lepramim.ui.theme.nomeDaCor
 import java.util.Locale
 
@@ -152,6 +158,7 @@ fun PaginaVoz(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) ->
 
 // ---------------------------------------------------------------- Azure
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Unit) {
     val prefs by vm.prefs.collectAsStateWithLifecycle()
@@ -190,26 +197,65 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
                 }
             }
         }
-        Secao("Consumo no portal") {
+        Secao("Uso do mês") {
+            val usados = prefs.portalNoMes ?: prefs.usadosNoMes
+            val cota = Preferencias.COTA_AZURE
+            val perto = usados > cota * 0.9
+            LinearProgressIndicator(
+                progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth(),
+                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                "%,d de %,d caracteres".format(PT, usados, cota),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        var avancado by remember { mutableStateOf(false) }
+        Row(
+            Modifier.fillMaxWidth().clickable { avancado = !avancado },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Avançado", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Consumo lido do portal da Azure",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null, tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        if (avancado) ModalBottomSheet(onDismissRequest = { avancado = false }) {
+          Column(
+            Modifier.navigationBarsPadding().imePadding().verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+          ) {
+          Secao("Consumo no portal") {
             val mensagemMonitor by vm.mensagemMonitor.collectAsStateWithLifecycle()
+            val travado = prefs.monSegredo.isNotEmpty()
             var app by remember(prefs.monApp) { mutableStateOf(prefs.monApp) }
             var tenant by remember(prefs.monTenant) { mutableStateOf(prefs.monTenant) }
             var assinatura by remember(prefs.monAssinatura) { mutableStateOf(prefs.monAssinatura) }
             var recurso by remember(prefs.monRecurso) { mutableStateOf(prefs.monRecurso) }
             OutlinedTextField(
-                value = app, onValueChange = { app = it; vm.definirMonApp(it) },
+                value = app, readOnly = travado, onValueChange = { app = it; vm.definirMonApp(it) },
                 singleLine = true, label = { Text("ID do aplicativo") }, modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = tenant, onValueChange = { tenant = it; vm.definirMonTenant(it) },
+                value = tenant, readOnly = travado, onValueChange = { tenant = it; vm.definirMonTenant(it) },
                 singleLine = true, label = { Text("ID do diretório") }, modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = recurso, onValueChange = { recurso = it; vm.definirMonRecurso(it) },
+                value = recurso, readOnly = travado, onValueChange = { recurso = it; vm.definirMonRecurso(it) },
                 singleLine = true, label = { Text("Recurso") }, modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = assinatura, onValueChange = { assinatura = it; vm.definirMonAssinatura(it) },
+                value = assinatura, readOnly = travado, onValueChange = { assinatura = it; vm.definirMonAssinatura(it) },
                 singleLine = true, label = { Text("ID da assinatura") }, modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -231,21 +277,8 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
                     OutlinedButton(modifier = Modifier.weight(1f), onClick = vm::removerMonitor) { Text("Remover") }
                 }
             }
-        }
-        Secao("Uso do mês") {
-            val usados = prefs.portalNoMes ?: prefs.usadosNoMes
-            val cota = Preferencias.COTA_AZURE
-            val perto = usados > cota * 0.9
-            LinearProgressIndicator(
-                progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth(),
-                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                "%,d de %,d caracteres".format(PT, usados, cota),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+          }
+          }
         }
     }
 }
@@ -296,19 +329,6 @@ fun PaginaFiltros(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> 
 fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Unit) {
     val prefs by vm.prefs.collectAsStateWithLifecycle()
     Pagina(Rota.APARENCIA.titulo, voltar, avisos) {
-        Secao("Tema") {
-            val temas = listOf(TemaApp.SISTEMA to "Sistema", TemaApp.CLARO to "Claro", TemaApp.ESCURO to "Escuro")
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                temas.forEachIndexed { i, (tema, nome) ->
-                    SegmentedButton(
-                        selected = prefs.tema == tema,
-                        onClick = { vm.definirTema(tema) },
-                        shape = SegmentedButtonDefaults.itemShape(i, temas.size),
-                        icon = {},
-                    ) { Text(nome) }
-                }
-            }
-        }
         Secao("Texto") {
             val tamanhos = com.lepramim.data.TamanhoTexto.entries
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -323,19 +343,48 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
             }
             SeletorFonte(prefs.fonte, prefs.tamanho.sp) { vm.definirFonte(it) }
         }
-        Secao("Cor") {
+        Secao("Tema") {
+            val temas = listOf(TemaApp.SISTEMA to "Sistema", TemaApp.CLARO to "Claro", TemaApp.ESCURO to "Escuro")
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                temas.forEachIndexed { i, (tema, nome) ->
+                    SegmentedButton(
+                        selected = prefs.tema == tema,
+                        onClick = { vm.definirTema(tema) },
+                        shape = SegmentedButtonDefaults.itemShape(i, temas.size),
+                        icon = {},
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
+                    ) { Text(nome, maxLines = 1, softWrap = false) }
+                }
+            }
+            val escuroAgora = prefs.tema == TemaApp.ESCURO || (prefs.tema == TemaApp.SISTEMA && androidx.compose.foundation.isSystemInDarkTheme())
+            if (escuroAgora) {
+                Text("Fundo escuro · " + prefs.fundo.nome, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FundoEscuro.entries.forEach { opcao ->
+                        val escolhida = opcao == prefs.fundo
+                        Box(
+                            Modifier.weight(1f).aspectRatio(1f).background(amostraDoFundo(opcao), CircleShape)
+                                .border(
+                                    if (escolhida) 3.dp else 1.dp,
+                                    if (escolhida) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
+                                    CircleShape,
+                                )
+                                .clickable { vm.definirFundo(opcao) },
+                        ) {}
+                    }
+                }
+            }
+            Text("Destaque · " + nomeDaCor(prefs.cor), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 CorDestaque.entries.forEach { opcao ->
                     val escolhida = opcao == prefs.cor
                     Box(
-                        Modifier.size(44.dp).background(amostraDe(opcao), CircleShape)
+                        Modifier.size(44.dp).background(amostraDe(opcao, escuroAgora), CircleShape)
                             .then(if (escolhida) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
                             .clickable { vm.definirCor(opcao) },
-                        contentAlignment = Alignment.Center,
                     ) {}
                 }
             }
-            Text(nomeDaCor(prefs.cor), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

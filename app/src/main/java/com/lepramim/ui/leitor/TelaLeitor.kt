@@ -225,7 +225,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                 velocidade = prefs.velocidade, aoMudarVelocidade = vm::definirVelocidade,
             )
         },
-        snackbarHost = { SnackbarHost(avisos) },
+        snackbarHost = { com.lepramim.ui.componentes.HostAvisos(avisos) },
     ) { margens ->
         Editor(
             texto = texto, trecho = trecho, destacar = prefs.destacar, editavel = editando,

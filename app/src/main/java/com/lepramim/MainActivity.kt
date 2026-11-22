@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val prefs by vm.prefs.collectAsStateWithLifecycle()
-            TemaLeitor(prefs.cor, prefs.tema) { AppLeitor(vm) }
+            TemaLeitor(prefs.cor, prefs.tema, prefs.fundo) { AppLeitor(vm) }
         }
     }
 
