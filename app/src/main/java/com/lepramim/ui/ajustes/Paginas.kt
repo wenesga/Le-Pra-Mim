@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.AccessibilityNew
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.foundation.layout.imePadding
@@ -376,13 +377,19 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
             }
             Text("Destaque · " + nomeDaCor(prefs.cor), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                CorDestaque.entries.forEach { opcao ->
+                CorDestaque.entries.filter { it != CorDestaque.AUTOMATICA || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S }.forEach { opcao ->
                     val escolhida = opcao == prefs.cor
                     Box(
                         Modifier.size(44.dp).background(amostraDe(opcao, escuroAgora, androidx.compose.ui.platform.LocalContext.current), CircleShape)
                             .then(if (escolhida) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier)
                             .clickable { vm.definirCor(opcao) },
-                    ) {}
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (opcao == CorDestaque.AUTOMATICA) Icon(
+                            Icons.Outlined.AutoAwesome, contentDescription = "Automática",
+                            tint = if (escuroAgora) Color.White else Color(0xFF1A1A1A),
+                        )
+                    }
                 }
             }
         }

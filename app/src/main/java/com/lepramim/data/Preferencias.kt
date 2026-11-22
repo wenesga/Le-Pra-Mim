@@ -19,20 +19,20 @@ enum class CorDestaque(
     /** Tom forte no tema escuro (botões e seleções, texto branco por cima). */
     val forteEscuro: Long,
 ) {
+    /** Android 12+: cor do papel de parede; os valores são só reserva. */
+    AUTOMATICA(0xFF888888, "Automática", 0xFF888888, 0xFF888888),
     AZUL(0xFF60A5FA, "Azul", 0xFF3D7FEF, 0xFF2F6FEB),
     VERDE(0xFF4ADE80, "Verde", 0xFF0E9F6E, 0xFF0E9F6E),
     ROXO(0xFFB794F6, "Roxo", 0xFF8E6BD6, 0xFF8E6BD6),
     TURQUESA(0xFF4DB6AC, "Turquesa", 0xFF1F8F85, 0xFF1F8F85),
     LARANJA(0xFFF4A261, "Laranja", 0xFFD9803A, 0xFFD9803A),
     ROSA(0xFFFB7185, "Rosa", 0xFFD9638A, 0xFFD9638A),
-    /** Android 12+: cor do papel de parede; os valores são só reserva. */
-    AUTOMATICA(0xFF888888, "Automática", 0xFF888888, 0xFF888888),
 }
 
 /** Fundo do tema escuro (as variações do Ciclo Treino; independe da cor de destaque). */
 enum class FundoEscuro(val nome: String) {
-    PRETO("Preto"), VINHO_PROFUNDO("Vinho profundo"), GRAFITE("Grafite"), PETROLEO("Petróleo"),
-    MARINHO("Marinho"), VERDE_PROFUNDO("Verde profundo"), ROXO_PROFUNDO("Roxo profundo"),
+    PRETO("Preto"), PETROLEO("Petróleo"), MARINHO("Marinho"),
+    VINHO_PROFUNDO("Vinho profundo"), GRAFITE("Grafite"), VERDE_PROFUNDO("Verde profundo"), ROXO_PROFUNDO("Roxo profundo"),
 }
 
 /** Tema do app: segue o sistema ou fica fixo. */
