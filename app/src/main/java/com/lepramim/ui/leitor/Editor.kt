@@ -63,8 +63,8 @@ fun Editor(
         if (atual != valor.text) valor = TextFieldValue(atual, TextRange(valor.selection.end.coerceAtMost(atual.length)))
     }
 
-    val corFundo = MaterialTheme.colorScheme.primaryContainer
-    val corTexto = MaterialTheme.colorScheme.onPrimaryContainer
+    val corFundo = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+    val corTexto = androidx.compose.ui.graphics.Color.Unspecified
     val destaque = remember(trecho, destacar, corFundo, corTexto) {
         VisualTransformation { t ->
             // Com o destaque desligado a rolagem continua seguindo a leitura, só não pinta.

@@ -206,7 +206,8 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                 if (prefs.azure) androidx.compose.material3.LinearProgressIndicator(
                     progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
                     modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
+                trackColor = com.lepramim.ui.theme.trilhoBarra(),
                 )
             }
             }

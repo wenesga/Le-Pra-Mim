@@ -123,7 +123,7 @@ fun TelaAjustes(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) 
             itens.forEach { (rota, icone, resumo) ->
                 ListItem(
                     modifier = Modifier.clickable { navegar(rota) },
-                    leadingContent = { Icon(icone, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    leadingContent = { Icon(icone, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     headlineContent = { Text(rota.titulo) },
                     supportingContent = { Text(resumo) },
                     trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
@@ -186,14 +186,14 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
                 modifier = Modifier.fillMaxWidth(),
             )
             if (prefs.chave.isEmpty()) {
-                Button(modifier = Modifier.fillMaxWidth(), onClick = {
+                Button(modifier = Modifier.fillMaxWidth(), colors = com.lepramim.ui.theme.corBotao(), onClick = {
                     val cm = contexto.getSystemService(ClipboardManager::class.java)
                     val t = cm.primaryClip?.getItemAt(0)?.text?.toString().orEmpty().trim()
                     if (t.isNotEmpty()) { vm.colarChave(t); cm.clearPrimaryClip() }
                 }) { Text("Colar") }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
-                    Button(modifier = Modifier.weight(1f), onClick = vm::testar) { Text("Testar") }
+                    Button(modifier = Modifier.weight(1f), colors = com.lepramim.ui.theme.corBotao(), onClick = vm::testar) { Text("Testar") }
                     OutlinedButton(modifier = Modifier.weight(1f), onClick = vm::removerChave) { Text("Remover") }
                 }
             }
@@ -205,7 +205,8 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
             LinearProgressIndicator(
                 progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth(),
-                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
+                trackColor = com.lepramim.ui.theme.trilhoBarra(),
             )
             Text(
                 "%,d de %,d caracteres".format(PT, usados, cota),
@@ -267,14 +268,14 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
                 modifier = Modifier.fillMaxWidth(),
             )
             if (prefs.monSegredo.isEmpty()) {
-                Button(modifier = Modifier.fillMaxWidth(), onClick = {
+                Button(modifier = Modifier.fillMaxWidth(), colors = com.lepramim.ui.theme.corBotao(), onClick = {
                     val cm = contexto.getSystemService(ClipboardManager::class.java)
                     val t = cm.primaryClip?.getItemAt(0)?.text?.toString().orEmpty().trim()
                     if (t.isNotEmpty()) { vm.colarSegredo(t); cm.clearPrimaryClip() }
                 }) { Text("Colar") }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
-                    Button(modifier = Modifier.weight(1f), onClick = { vm.atualizarPortal() }) { Text("Atualizar") }
+                    Button(modifier = Modifier.weight(1f), colors = com.lepramim.ui.theme.corBotao(), onClick = { vm.atualizarPortal() }) { Text("Atualizar") }
                     OutlinedButton(modifier = Modifier.weight(1f), onClick = vm::removerMonitor) { Text("Remover") }
                 }
             }
@@ -318,7 +319,7 @@ fun PaginaFiltros(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> 
                 supportingText = { Text(erro ?: "Só a expressão, sem barras. Exemplo: #+") },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Button(onClick = { adicionar() }, modifier = Modifier.fillMaxWidth()) { Text("Adicionar") }
+            Button(onClick = { adicionar() }, colors = com.lepramim.ui.theme.corBotao(), modifier = Modifier.fillMaxWidth()) { Text("Adicionar") }
         }
     }
 }
@@ -407,7 +408,7 @@ fun PaginaAtalhos(avisos: SnackbarHostState, voltar: () -> Unit) {
         Column {
             ListItem(
                 colors = semFundo,
-                leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 headlineContent = { Text("Marcar na tela") },
                 supportingContent = { Text(if (ligada) "Ligado" else "Desligado") },
                 trailingContent = {
@@ -418,7 +419,7 @@ fun PaginaAtalhos(avisos: SnackbarHostState, voltar: () -> Unit) {
             )
             ListItem(
                 colors = semFundo,
-                leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 headlineContent = { Text("Botão Ler") },
                 supportingContent = { Text("Para ler o texto copiado: puxe a Central de Controle, toque em Editar e arraste o botão Ler.") },
             )

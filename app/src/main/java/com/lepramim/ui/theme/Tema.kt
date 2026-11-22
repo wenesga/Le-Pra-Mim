@@ -175,3 +175,22 @@ fun TemaLeitor(cor: CorDestaque, tema: TemaApp, fundo: FundoEscuro, content: @Co
     val esquema = if (escuro) escuroDe(fundo, tons) else claroDe(tons)
     MaterialTheme(colorScheme = esquema, shapes = Formas, content = content)
 }
+
+/** Botão cheio: tom forte do destaque com texto branco. */
+@androidx.compose.runtime.Composable
+fun corBotao() = androidx.compose.material3.ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+)
+
+/** Controle deslizante: parte feita no destaque, parte restante neutra. */
+@androidx.compose.runtime.Composable
+fun corSlider() = androidx.compose.material3.SliderDefaults.colors(
+    thumbColor = MaterialTheme.colorScheme.primaryContainer,
+    activeTrackColor = MaterialTheme.colorScheme.primaryContainer,
+    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    inactiveTickColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+)
+
+/** Trilho neutro das barras de uso. */
+@androidx.compose.runtime.Composable
+fun trilhoBarra() = MaterialTheme.colorScheme.surfaceContainerHighest

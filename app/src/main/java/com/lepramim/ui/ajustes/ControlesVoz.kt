@@ -92,6 +92,6 @@ fun ControleVelocidade(vm: LeitorViewModel) {
     Slider(
         value = velocidade, onValueChange = { velocidade = it },
         onValueChangeFinished = { vm.definirVelocidade(velocidade) },
-        valueRange = 0.5f..2.5f, steps = 19,
+        valueRange = 0.5f..2.5f, steps = 19, colors = com.lepramim.ui.theme.corSlider(),
     )
 }

@@ -112,7 +112,7 @@ fun LinhaSwitch(titulo: String, marcado: Boolean, aoMudar: (Boolean) -> Unit, re
             Text(titulo, style = MaterialTheme.typography.bodyLarge)
             if (resumo != null) Text(resumo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = marcado, onCheckedChange = aoMudar)
+        Switch(checked = marcado, onCheckedChange = aoMudar, colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primaryContainer, checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer, checkedBorderColor = MaterialTheme.colorScheme.primaryContainer))
     }
 }
 

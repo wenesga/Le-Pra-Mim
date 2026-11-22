@@ -92,6 +92,7 @@ fun BarraPlayer(
                     arrastando = null
                 },
                 enabled = situacao != Situacao.PARADO,
+                colors = com.lepramim.ui.theme.corSlider(),
             )
             Text(
                 Leitura.tempoTexto(arrastando?.let { (it * total).toInt() } ?: posicao, total, cps),
@@ -103,9 +104,9 @@ fun BarraPlayer(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = aoVoltar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
+                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
-                FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(64.dp)) {
+                FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(64.dp), colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)) {
                     if (situacao == Situacao.TOCANDO && carregando) androidx.compose.material3.CircularProgressIndicator(
                         modifier = Modifier.size(30.dp), strokeWidth = 3.dp, color = androidx.compose.material3.LocalContentColor.current,
                     )
@@ -113,7 +114,7 @@ fun BarraPlayer(
                     else Icon(Icons.Outlined.PlayArrow, contentDescription = "Ler", modifier = Modifier.size(32.dp))
                 }
                 IconButton(onClick = aoAvancar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
+                    Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                     IconButton(onClick = { expandido = !expandido }) {
@@ -143,7 +144,7 @@ fun BarraPlayer(
                     Slider(
                         value = valor, onValueChange = { valor = it },
                         onValueChangeFinished = { aoMudarVelocidade(valor) },
-                        valueRange = 0.5f..2.5f, steps = 19, modifier = Modifier.weight(1f),
+                        valueRange = 0.5f..2.5f, steps = 19, modifier = Modifier.weight(1f), colors = com.lepramim.ui.theme.corSlider(),
                     )
                     IconButton(onClick = { aoMudarVelocidade((velocidade + 0.1f).coerceAtMost(2.5f)) }) {
                         Icon(Icons.Outlined.ChevronRight, contentDescription = "Mais rápido")
