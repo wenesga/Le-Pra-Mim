@@ -73,6 +73,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     val texto by Leitura.texto.collectAsStateWithLifecycle()
     val trecho by Leitura.trecho.collectAsStateWithLifecycle()
     val situacao by Leitura.situacao.collectAsStateWithLifecycle()
+    val carregando by Leitura.carregando.collectAsStateWithLifecycle()
     val cps by Leitura.cps.collectAsStateWithLifecycle()
 
     var vozAberta by rememberSaveable { mutableStateOf(false) }
@@ -213,7 +214,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
         },
         bottomBar = {
             BarraPlayer(
-                total = texto.length, trecho = trecho, situacao = situacao, cps = cps, exportando = exportando,
+                total = texto.length, trecho = trecho, situacao = situacao, carregando = carregando, cps = cps, exportando = exportando,
                 uso = if (prefs.azure) (prefs.portalNoMes ?: prefs.usadosNoMes) to com.lepramim.data.Preferencias.COTA_AZURE else null,
                 aoAlternar = {
                     foco.clearFocus()

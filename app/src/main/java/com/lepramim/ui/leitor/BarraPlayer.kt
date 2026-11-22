@@ -62,6 +62,7 @@ fun BarraPlayer(
     total: Int,
     trecho: IntRange?,
     situacao: Situacao,
+    carregando: Boolean,
     cps: Float,
     exportando: String,
     uso: Pair<Long, Long>?,
@@ -105,7 +106,10 @@ fun BarraPlayer(
                     Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
                 FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(64.dp)) {
-                    if (situacao == Situacao.TOCANDO) Icon(Icons.Outlined.Pause, contentDescription = "Pausar", modifier = Modifier.size(32.dp))
+                    if (situacao == Situacao.TOCANDO && carregando) androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(30.dp), strokeWidth = 3.dp, color = androidx.compose.material3.LocalContentColor.current,
+                    )
+                    else if (situacao == Situacao.TOCANDO) Icon(Icons.Outlined.Pause, contentDescription = "Pausar", modifier = Modifier.size(32.dp))
                     else Icon(Icons.Outlined.PlayArrow, contentDescription = "Ler", modifier = Modifier.size(32.dp))
                 }
                 IconButton(onClick = aoAvancar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {

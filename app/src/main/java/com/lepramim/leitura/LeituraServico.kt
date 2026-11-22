@@ -36,6 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -227,6 +228,7 @@ class LeituraServico : Service() {
     }
 
     private fun pararAzure() {
+        Leitura._carregando.value = false
         jobAzure?.cancel(); jobAzure = null
         proxAzure?.cancel(); proxAzure = null
         player?.let { runCatching { it.release() } }
@@ -253,7 +255,15 @@ class LeituraServico : Service() {
                 var i = atual
                 proxAzure = buscar(i)
                 while (i <= frases.lastIndex) {
-                    val mp3 = proxAzure!!.await()
+                    val pedido = proxAzure!!
+                    val lento = if (pedido.isCompleted) null else launch {
+                        Leitura._carregando.value = true
+                        delay(5000)
+                        aviso("Conexão lenta. Aguarde.")
+                    }
+                    val mp3 = pedido.await()
+                    lento?.cancel()
+                    Leitura._carregando.value = false
                     proxAzure = if (i < frases.lastIndex) buscar(i + 1) else null
                     atual = i
                     Leitura._trecho.value = inicioDe(i)..frases[i].last
@@ -263,6 +273,7 @@ class LeituraServico : Service() {
                 }
                 encerrar()
             } catch (e: ErroAzure) {
+                Leitura._carregando.value = false
                 aviso(Azure.mensagemCurta(e.codigo) + " Voz do aparelho.")
                 prefs = prefs.copy(motor = "")
                 prepararMotor { falar() }

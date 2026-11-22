@@ -24,6 +24,10 @@ object Leitura {
     val trecho: StateFlow<IntRange?> = _trecho
     val situacao: StateFlow<Situacao> = _situacao
 
+    /** Esperando a voz da Azure mandar o áudio da frase (o botão de play mostra um círculo girando). */
+    internal val _carregando = MutableStateFlow(false)
+    val carregando: StateFlow<Boolean> = _carregando
+
     /** Quando a leitura atual começou; serve para saber se o copiado é mais novo. */
     @Volatile var inicio = 0L
 
