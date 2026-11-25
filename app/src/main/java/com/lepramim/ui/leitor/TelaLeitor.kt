@@ -81,6 +81,10 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     var menu by remember { mutableStateOf(false) }
     // O teclado só abre com a edição ligada; por padrão o texto é só para leitura.
     var editando by rememberSaveable { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = editando) {
+        editando = false
+        foco.clearFocus()
+    }
 
     val colar: () -> Unit = {
         val t = Leitura.copiado(contexto)
