@@ -383,7 +383,19 @@ class LeituraServico : Service() {
      * Capa do player: alto-falante menta sobre grafite. No Red Magic o player estica a capa no cartão todo,
      * então lá ela é só um fundo verde liso.
      */
-    private val capa by lazy {
+    private var capaCache: Pair<Int, Bitmap>? = null
+
+    /** Cor forte do destaque escolhido (a Automática vem do papel de parede). */
+    private fun corCapa(): Int {
+        val c = prefs.cor
+        if (c == com.lepramim.data.CorDestaque.AUTOMATICA && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S)
+            return getColor(android.R.color.system_accent1_600)
+        return c.forteEscuro.toInt()
+    }
+
+    private fun capa(): Bitmap {
+        val cor = if (semCapa) 0 else corCapa()
+        capaCache?.let { if (it.first == cor) return it.second }
         val b = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
         val c = Canvas(b)
         if (semCapa) {
@@ -393,10 +405,22 @@ class LeituraServico : Service() {
             }
             c.drawRect(0f, 0f, 512f, 512f, pincel)
         } else {
-            c.drawColor(0xFF44484F.toInt())
-            android.graphics.BitmapFactory.decodeResource(resources, R.drawable.capa_logo)?.let { c.drawBitmap(it, null, android.graphics.Rect(0, 0, 512, 512), null) }
+            // A arte é branca + verde; cada pixel vira branco + a cor de destaque (a dobra sai mais escura).
+            val orig = android.graphics.BitmapFactory.decodeResource(resources, R.drawable.capa_logo)
+            if (orig != null) {
+                val px = IntArray(512 * 512)
+                Bitmap.createScaledBitmap(orig, 512, 512, true).getPixels(px, 0, 512, 0, 0, 512, 512)
+                val ar = android.graphics.Color.red(cor); val ag = android.graphics.Color.green(cor); val ab = android.graphics.Color.blue(cor)
+                for (i in px.indices) {
+                    val t = ((255 - android.graphics.Color.red(px[i])) / 204f).coerceIn(0f, 1.2f)
+                    fun m(x: Int) = (255 + t * (x - 255)).toInt().coerceIn(0, 255)
+                    px[i] = android.graphics.Color.rgb(m(ar), m(ag), m(ab))
+                }
+                b.setPixels(px, 0, 512, 0, 0, 512, 512)
+            }
         }
-        b
+        capaCache = cor to b
+        return b
     }
 
     /** Notificação de mídia do sistema, com sessão: o Android (e a Xiaomi) desenham o player. */
@@ -422,7 +446,7 @@ class LeituraServico : Service() {
         val posicao = ((Leitura._trecho.value?.first ?: 0) / cps * 1000).toLong()
         val meta = MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE, "Lê Pra Mim").putLong(MediaMetadata.METADATA_KEY_DURATION, total)
 
-        meta.putBitmap(MediaMetadata.METADATA_KEY_ART, capa).putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, capa)
+        meta.putBitmap(MediaMetadata.METADATA_KEY_ART, capa()).putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, capa())
         s.setMetadata(meta.build())
         s.setPlaybackState(
             PlaybackState.Builder()
@@ -435,7 +459,7 @@ class LeituraServico : Service() {
         val n = NotificationCompat.Builder(this, CANAL)
             .setSmallIcon(R.drawable.ic_ler)
             .setContentTitle("Lê Pra Mim")
-            .setLargeIcon(capa)
+            .setLargeIcon(capa())
             .setContentIntent(abrir)
             .setDeleteIntent(intencao(Leitura.ACAO_PARAR))
             .setOngoing(tocando)
