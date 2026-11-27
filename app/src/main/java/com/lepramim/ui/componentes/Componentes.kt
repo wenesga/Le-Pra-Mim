@@ -140,7 +140,7 @@ fun <T> Segmentado(opcoes: List<Pair<T, String>>, selecionado: T, modifier: Modi
     androidx.compose.foundation.layout.Row(
         modifier.fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(fundo ?: cs.background)
+            .background(fundo ?: cs.surfaceContainerLowest)
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
