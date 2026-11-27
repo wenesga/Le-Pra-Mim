@@ -83,6 +83,8 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     var menu by remember { mutableStateOf(false) }
     // O teclado só abre com a edição ligada; por padrão o texto é só para leitura.
     var editando by rememberSaveable { mutableStateOf(false) }
+    val pedidoEditar by vm.editarPedido.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(pedidoEditar) { if (pedidoEditar) { editando = true; vm.editarAtendido() } }
     androidx.activity.compose.BackHandler(enabled = editando) {
         editando = false
         foco.clearFocus()
@@ -94,29 +96,6 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     }
     val criarMp3 = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/mpeg")) { uri ->
         if (uri != null) vm.exportar(uri)
-    }
-    val abrirTxt = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) vm.importar(uri)
-    }
-    // Scanner de documento do Google: câmera com os quatro cantos e correção de perspectiva, ou imagem da galeria.
-    val escanear = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
-        val resultado = com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult.fromActivityResultIntent(r.data)
-        val paginas = resultado?.pages?.map { it.imageUri }.orEmpty()
-        if (paginas.isNotEmpty()) vm.lerImagens(paginas)
-    }
-    val fotoOuImagem: () -> Unit = {
-        val opcoes = com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.Builder()
-            .setGalleryImportAllowed(true)
-            .setPageLimit(10)
-            .setResultFormats(com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
-            .setScannerMode(com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.SCANNER_MODE_BASE)
-            .build()
-        val atividade = contexto as? android.app.Activity
-        if (atividade != null) {
-            com.google.mlkit.vision.documentscanner.GmsDocumentScanning.getClient(opcoes).getStartScanIntent(atividade)
-                .addOnSuccessListener { escanear.launch(androidx.activity.result.IntentSenderRequest.Builder(it).build()) }
-                .addOnFailureListener { escopo.launch { avisos.showSnackbar("O scanner não está disponível neste aparelho") } }
-        }
     }
     val exportar: () -> Unit = {
         if (prefs.chave.isBlank()) {
@@ -186,20 +165,9 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                         )
                     }
                     IconButton(onClick = colar) { Icon(Icons.Outlined.ContentPaste, contentDescription = "Colar") }
-                    IconButton(onClick = { navegar(Rota.AJUSTES) }) { Icon(Icons.Outlined.Settings, contentDescription = "Ajustes") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Mais") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         val temTexto = texto.isNotEmpty()
-                        DropdownMenuItem(
-                            text = { Text("Importar") },
-                            leadingIcon = { Icon(Icons.Outlined.FileOpen, contentDescription = null) },
-                            onClick = { menu = false; abrirTxt.launch(arrayOf("text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Digitalizar") },
-                            leadingIcon = { Icon(Icons.Outlined.DocumentScanner, contentDescription = null) },
-                            onClick = { menu = false; fotoOuImagem() },
-                        )
                         DropdownMenuItem(
                             text = { Text("Copiar") }, enabled = temTexto,
                             leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },

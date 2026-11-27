@@ -68,4 +68,5 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.mlkit.texto)
     implementation(libs.mlkit.scanner)
+    implementation(libs.pdfbox)
 }

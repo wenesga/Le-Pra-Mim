@@ -170,6 +170,21 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     val aviso: StateFlow<String?> = _aviso
     fun avisoLido() { _aviso.value = null }
 
+    /** A página de entradas pede para a tela principal abrir a edição (Escrever texto). */
+    private val _editarPedido = MutableStateFlow(false)
+    val editarPedido: StateFlow<Boolean> = _editarPedido
+    fun pedirEdicao() { _editarPedido.value = true }
+    fun editarAtendido() { _editarPedido.value = false }
+
+    /** PDF: cada página vira imagem e passa pelo reconhecimento de texto; pode demorar. */
+    fun lerPdf(origem: Uri) {
+        _aviso.value = "Lendo o PDF… pode demorar"
+        viewModelScope.launch {
+            val texto = withContext(Dispatchers.IO) { com.lepramim.leitura.Imagens.pdf(getApplication(), origem) }
+            _aviso.value = if (texto == null) "Não foi possível ler o PDF" else { Leitura.editar(getApplication(), texto); null }
+        }
+    }
+
     /** Reconhece o texto das imagens escaneadas ou escolhidas e põe o resultado no editor. */
     fun lerImagens(imagens: List<Uri>) {
         _aviso.value = "Reconhecendo o texto…"
@@ -180,6 +195,7 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Lê um arquivo TXT e põe o conteúdo no editor. Aceita UTF-8 e, se não for, Windows-1252 (TXT antigo). */
     fun importar(origem: Uri) {
+        if (getApplication<Application>().contentResolver.getType(origem) == "application/pdf") { lerPdf(origem); return }
         viewModelScope.launch {
             val texto = withContext(Dispatchers.IO) {
                 Arquivos.texto(getApplication(), origem)

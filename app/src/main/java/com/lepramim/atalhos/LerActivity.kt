@@ -32,6 +32,9 @@ class LerActivity : Activity() {
                     // Foto ou imagem: reconhece o texto e só então lê; a tela invisível espera o resultado.
                     Toast.makeText(this, "Reconhecendo o texto…", Toast.LENGTH_SHORT).show()
                     Imagens.texto(this, listOf(arquivo)) { concluir(it) }
+                } else if (arquivo != null && intent.type == "application/pdf") {
+                    Toast.makeText(this, "Lendo o PDF… pode demorar", Toast.LENGTH_LONG).show()
+                    Thread { val t = Imagens.pdf(this, arquivo); runOnUiThread { concluir(t) } }.start()
                 } else if (arquivo != null) concluir(Arquivos.texto(this, arquivo))
                 else concluir(intent.getStringExtra(Intent.EXTRA_TEXT))
             }

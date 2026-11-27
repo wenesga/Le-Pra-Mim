@@ -9,6 +9,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -74,26 +76,51 @@ fun BarraPlayer(
     aoMudarVelocidade: (Float) -> Unit,
 ) {
     var expandido by remember { mutableStateOf(false) }
+    // Recolhido: só o play pequeno e a barra de andamento.
+    var recolhido by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val vazio = total == 0
     var arrastando by remember { mutableStateOf<Float?>(null) }
     val posicao = trecho?.first ?: 0
     val fracao = if (total == 0) 0f else (posicao.toFloat() / total).coerceIn(0f, 1f)
+
+    val barra: @Composable (Modifier) -> Unit = { m ->
+        Slider(
+            value = arrastando ?: fracao,
+            onValueChange = { arrastando = it },
+            onValueChangeFinished = {
+                arrastando?.let { aoIr((it * total).toInt()) }
+                arrastando = null
+            },
+            enabled = situacao != Situacao.PARADO,
+            colors = com.lepramim.ui.theme.corSlider(),
+            modifier = m,
+        )
+    }
+    val conteudoPlay: @Composable (Int, Int) -> Unit = { icone, indicador ->
+        if (situacao == Situacao.TOCANDO && carregando) androidx.compose.material3.CircularProgressIndicator(
+            modifier = Modifier.size(indicador.dp), strokeWidth = 3.dp, color = androidx.compose.material3.LocalContentColor.current,
+        )
+        else if (situacao == Situacao.TOCANDO) Icon(Icons.Outlined.Pause, contentDescription = "Pausar", modifier = Modifier.size(icone.dp))
+        else Icon(Icons.Outlined.PlayArrow, contentDescription = "Ler", modifier = Modifier.size(icone.dp))
+    }
+    val corPlay = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    )
 
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(
             // Com o teclado aberto a barra de navegação já está coberta; somar de novo deixava um vão.
             Modifier.windowInsetsPadding(WindowInsets.navigationBars.exclude(WindowInsets.ime)).padding(horizontal = Espaco.gg).padding(top = Espaco.m, bottom = Espaco.m),
         ) {
-            Slider(
-                value = arrastando ?: fracao,
-                onValueChange = { arrastando = it },
-                onValueChangeFinished = {
-                    arrastando?.let { aoIr((it * total).toInt()) }
-                    arrastando = null
-                },
-                enabled = situacao != Situacao.PARADO,
-                colors = com.lepramim.ui.theme.corSlider(),
-            )
+            AnimatedVisibility(visible = recolhido) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(44.dp), colors = corPlay) { conteudoPlay(24, 22) }
+                    barra(Modifier.weight(1f).padding(horizontal = Espaco.m))
+                    IconButton(onClick = { recolhido = false }) { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Expandir") }
+                }
+            }
+            AnimatedVisibility(visible = !recolhido) { Column {
+            barra(Modifier)
             Text(
                 Leitura.tempoTexto(arrastando?.let { (it * total).toInt() } ?: posicao, total, cps),
                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -102,26 +129,19 @@ fun BarraPlayer(
             )
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.weight(1f))
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    TextButton(onClick = { expandido = !expandido }) { Text(formatarVelocidade(velocidade)) }
+                }
                 IconButton(onClick = aoVoltar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {
                     Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
-                FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(64.dp), colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)) {
-                    if (situacao == Situacao.TOCANDO && carregando) androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(30.dp), strokeWidth = 3.dp, color = androidx.compose.material3.LocalContentColor.current,
-                    )
-                    else if (situacao == Situacao.TOCANDO) Icon(Icons.Outlined.Pause, contentDescription = "Pausar", modifier = Modifier.size(32.dp))
-                    else Icon(Icons.Outlined.PlayArrow, contentDescription = "Ler", modifier = Modifier.size(32.dp))
-                }
+                FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(64.dp), colors = corPlay) { conteudoPlay(32, 30) }
                 IconButton(onClick = aoAvancar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {
                     Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                    IconButton(onClick = { expandido = !expandido }) {
-                        Icon(
-                            if (expandido) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowUp,
-                            contentDescription = if (expandido) "Recolher" else "Expandir",
-                        )
+                    IconButton(onClick = { recolhido = true }) {
+                        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Recolher")
                     }
                 }
             }
@@ -150,6 +170,7 @@ fun BarraPlayer(
                         Icon(Icons.Outlined.ChevronRight, contentDescription = "Mais rápido")
                     }
                 }
+            } }
             } }
         }
     }
