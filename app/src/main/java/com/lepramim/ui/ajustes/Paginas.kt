@@ -354,6 +354,7 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                         selected = prefs.tamanho == t,
                         onClick = { vm.definirTamanho(t) },
                         shape = SegmentedButtonDefaults.itemShape(i, tamanhos.size),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp),
                         icon = {},
                     ) { Text(t.nome, maxLines = 1) }
                 }
