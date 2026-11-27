@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.lepramim.ui.componentes.sombraCartao
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.data.Preferencias
 import com.lepramim.ui.LeitorViewModel
@@ -37,16 +38,7 @@ fun formatarVelocidade(v: Float): String = String.format(Locale("pt", "BR"), "%.
 fun SeletorMotor(vm: LeitorViewModel) {
     val prefs by vm.prefs.collectAsStateWithLifecycle()
     val opcoes = listOf("" to "Aparelho", Preferencias.MOTOR_AZURE to "Azure")
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        opcoes.forEachIndexed { i, (id, nome) ->
-            SegmentedButton(
-                selected = prefs.motor == id,
-                onClick = { vm.definirMotor(id) },
-                shape = SegmentedButtonDefaults.itemShape(i, opcoes.size),
-                icon = {},
-            ) { Text(nome) }
-        }
-    }
+    com.lepramim.ui.componentes.Segmentado(opcoes, prefs.motor) { vm.definirMotor(it) }
 }
 
 /** Voz do aparelho (só aparece se o motor listou alguma). */

@@ -150,7 +150,7 @@ fun TelaAjustes(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) 
 fun PaginaVoz(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -> Unit, voltar: () -> Unit) {
     val prefs by vm.prefs.collectAsStateWithLifecycle()
     Pagina(Rota.VOZ.titulo, voltar, avisos) {
-        Secao("Motor") { SeletorMotor(vm) }
+        Secao("Motor", margemVertical = Espaco.m) { SeletorMotor(vm) }
         Secao("Voz") {
             if (prefs.azure) {
                 if (prefs.chave.isEmpty()) {
@@ -159,6 +159,7 @@ fun PaginaVoz(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) ->
                 }
                 SeletorVozAzure(vm)
             } else SeletorVozAparelho(vm)
+            com.lepramim.ui.componentes.Divisor()
             ControleVelocidade(vm)
         }
         Secao("Leitura") {
@@ -348,32 +349,14 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
     Pagina(Rota.APARENCIA.titulo, voltar, avisos) {
         Secao("Texto") {
             val tamanhos = com.lepramim.data.TamanhoTexto.entries
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                tamanhos.forEachIndexed { i, t ->
-                    SegmentedButton(
-                        selected = prefs.tamanho == t,
-                        onClick = { vm.definirTamanho(t) },
-                        shape = SegmentedButtonDefaults.itemShape(i, tamanhos.size),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 2.dp),
-                        icon = {},
-                    ) { Text(t.nome, maxLines = 1) }
-                }
-            }
+            com.lepramim.ui.componentes.Segmentado(tamanhos.map { it to it.nome }, prefs.tamanho) { vm.definirTamanho(it) }
+            com.lepramim.ui.componentes.Divisor()
             SeletorFonte(prefs.fonte, prefs.tamanho.sp) { vm.definirFonte(it) }
         }
         Secao("Tema") {
             val temas = listOf(TemaApp.SISTEMA to "Sistema", TemaApp.CLARO to "Claro", TemaApp.ESCURO to "Escuro")
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                temas.forEachIndexed { i, (tema, nome) ->
-                    SegmentedButton(
-                        selected = prefs.tema == tema,
-                        onClick = { vm.definirTema(tema) },
-                        shape = SegmentedButtonDefaults.itemShape(i, temas.size),
-                        icon = {},
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
-                    ) { Text(nome, maxLines = 1, softWrap = false) }
-                }
-            }
+            com.lepramim.ui.componentes.Segmentado(temas, prefs.tema) { vm.definirTema(it) }
+            com.lepramim.ui.componentes.Divisor()
             val escuroAgora = prefs.tema == TemaApp.ESCURO || (prefs.tema == TemaApp.SISTEMA && androidx.compose.foundation.isSystemInDarkTheme())
             if (escuroAgora) {
                 Text("Fundo escuro · " + prefs.fundo.nome, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -392,6 +375,7 @@ fun PaginaAparencia(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -
                     }
                 }
             }
+            if (escuroAgora) com.lepramim.ui.componentes.Divisor()
             Text("Destaque · " + nomeDaCor(prefs.cor), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 CorDestaque.entries.filter { it != CorDestaque.AUTOMATICA || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S }.forEach { opcao ->

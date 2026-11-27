@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -128,9 +129,45 @@ fun Modifier.sombraFaixa(paraCima: Boolean): Modifier {
     }
 }
 
+/** Linha fina que separa itens de um mesmo cartão. */
+@Composable
+fun Divisor() = androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+/** Seletor de uma opção, estilo faixa: faixa neutra e a escolhida preenchida com o tom do botão. */
+@Composable
+fun <T> Segmentado(opcoes: List<Pair<T, String>>, selecionado: T, modifier: Modifier = Modifier, fundo: androidx.compose.ui.graphics.Color? = null, aoEscolher: (T) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    androidx.compose.foundation.layout.Row(
+        modifier.fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(fundo ?: cs.surfaceContainerHigh)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        opcoes.forEach { (valor, nome) ->
+            val sel = valor == selecionado
+            val fundo by androidx.compose.animation.animateColorAsState(if (sel) cs.primary else androidx.compose.ui.graphics.Color.Transparent, label = "segmento")
+            Box(
+                Modifier.weight(1f)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(fundo)
+                    .clickable { aoEscolher(valor) }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    nome, maxLines = 1, softWrap = false,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (sel) cs.onPrimary else cs.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 /** Grupo de ajustes: título e, por padrão, o conteúdo dentro de um cartão com sombra. */
 @Composable
-fun Secao(titulo: String, neutro: Boolean = false, cartao: Boolean = true, conteudo: @Composable ColumnScope.() -> Unit) {
+fun Secao(titulo: String, neutro: Boolean = false, cartao: Boolean = true, margemVertical: androidx.compose.ui.unit.Dp = Espaco.gg, conteudo: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
         Text(
             titulo, style = MaterialTheme.typography.titleSmall,
@@ -140,7 +177,8 @@ fun Secao(titulo: String, neutro: Boolean = false, cartao: Boolean = true, conte
             val forma = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
             Column(
                 Modifier.fillMaxWidth().sombraCartao(forma).clip(forma)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Espaco.gg),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(horizontal = Espaco.gg, vertical = margemVertical),
                 verticalArrangement = Arrangement.spacedBy(Espaco.g),
             ) { conteudo() }
         } else conteudo()

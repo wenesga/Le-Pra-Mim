@@ -72,19 +72,10 @@ fun PaginaBackup(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> U
             ) {
                 Text("Backup automático", style = MaterialTheme.typography.bodyLarge)
                 val opcoes = FrequenciaBackup.entries
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    opcoes.forEachIndexed { i, f ->
-                        SegmentedButton(
-                            selected = prefs.frequenciaBackup == f,
-                            onClick = {
-                                vm.definirFrequenciaBackup(f)
-                                // Ligar sem ter escolhido o local: pergunta onde guardar.
-                                if (f != FrequenciaBackup.DESLIGADO && pasta.isEmpty()) escolherPasta.launch(null)
-                            },
-                            shape = SegmentedButtonDefaults.itemShape(i, opcoes.size),
-                            icon = {},
-                        ) { Text(f.nome, maxLines = 1) }
-                    }
+                com.lepramim.ui.componentes.Segmentado(opcoes.map { it to it.nome }, prefs.frequenciaBackup) { f ->
+                    vm.definirFrequenciaBackup(f)
+                    // Ligar sem ter escolhido o local: pergunta onde guardar.
+                    if (f != FrequenciaBackup.DESLIGADO && pasta.isEmpty()) escolherPasta.launch(null)
                 }
             }
 
