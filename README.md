@@ -12,6 +12,8 @@ Pensado para quem tem dislexia ou simplesmente prefere ouvir a ler.
 ![Android](https://img.shields.io/badge/Android-11%2B-33C48F?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Compose-44484F?logo=kotlin&logoColor=white)
 
+<img src="docs/tela-leitura.png" width="30%" alt="Tela de leitura, com a frase lida em destaque e o player"> <img src="docs/tela-recursos.png" width="30%" alt="Tela de recursos, com os cartões de carregar, digitalizar, link e escrever texto"> <img src="docs/tela-configuracoes.png" width="30%" alt="Tela de configurações, com a lista em cartões">
+
 </div>
 
 ---
