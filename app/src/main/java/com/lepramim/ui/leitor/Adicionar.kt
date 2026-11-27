@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
@@ -118,7 +119,7 @@ fun PaginaRecursos(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
         Secao("Recursos") {
             Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
                 Cartao(
-                    "Carregar", listOf("TXT", "Word", "PDF"),
+                    "Carregar", listOf("TXT", "DOCX", "PDF"),
                     { abrirDocumento.launch(arrayOf("text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/pdf")) },
                 ) { IconeGrande(Icons.Outlined.FileOpen) }
                 Cartao("Digitalizar", listOf("Câmera", "Imagem"), digitalizar) { IconeGrande(Icons.Outlined.DocumentScanner) }
@@ -214,9 +215,9 @@ private fun LinhaBiblioteca(item: ItemBiblioteca, aoAbrir: () -> Unit, aoRenomea
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer),
+            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest),
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Outlined.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
+        ) { Icon(Icons.Outlined.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         Column(Modifier.weight(1f).padding(horizontal = Espaco.g)) {
             Text(item.titulo, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("$data · $tamanho car.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -239,8 +240,7 @@ private fun RowScope.Cartao(titulo: String, etiquetas: List<String>, aoClicar: (
     val forma = RoundedCornerShape(20.dp)
     Box(
         Modifier.weight(1f).clip(forma)
-            .background(Brush.linearGradient(listOf(forte.copy(alpha = 0.25f), base, base)))
-            .border(1.dp, forte.copy(alpha = 0.25f), forma)
+            .background(base)
             .clickable(onClick = aoClicar),
     ) {
         Column(Modifier.fillMaxWidth().padding(start = Espaco.m, end = Espaco.m, top = 0.dp, bottom = Espaco.g), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -253,16 +253,16 @@ private fun RowScope.Cartao(titulo: String, etiquetas: List<String>, aoClicar: (
     }
 }
 
-/** Etiqueta pequena: fundo suave na cor do tema e texto na cor de destaque. */
+/** Etiqueta pequena: fundo na cor forte do tema e texto branco. */
 @Composable
 private fun Etiqueta(texto: String) {
     Text(
         texto, maxLines = 1, softWrap = false,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 12.sp),
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
         modifier = Modifier.clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
     )
 }
 
@@ -270,7 +270,7 @@ private fun Etiqueta(texto: String) {
 private fun IconeGrande(icone: ImageVector) {
     // O ícone esmaece de cima para baixo, como a figura dos cartões do outro app.
     Icon(
-        icone, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
+        icone, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(60.dp)
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {

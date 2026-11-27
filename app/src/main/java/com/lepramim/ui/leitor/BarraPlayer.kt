@@ -114,8 +114,7 @@ fun BarraPlayer(
     )
 
     Surface(
-        // Mesma cor do fundo da aba selecionada: o tom do tema a 20% sobre a cor das barras.
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f).compositeOver(MaterialTheme.colorScheme.surfaceContainer),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         shadowElevation = 6.dp,
     ) {

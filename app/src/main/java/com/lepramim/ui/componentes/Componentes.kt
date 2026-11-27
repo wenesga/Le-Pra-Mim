@@ -98,9 +98,12 @@ fun Pagina(
 
 /** Grupo de ajustes com título na cor de destaque. */
 @Composable
-fun Secao(titulo: String, conteudo: @Composable ColumnScope.() -> Unit) {
+fun Secao(titulo: String, neutro: Boolean = false, conteudo: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
-        Text(titulo, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(
+            titulo, style = MaterialTheme.typography.titleSmall,
+            color = if (neutro) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+        )
         conteudo()
     }
 }

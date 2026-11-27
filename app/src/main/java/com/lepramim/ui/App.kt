@@ -110,7 +110,7 @@ private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
                 val ativa = pager.currentPage == i
                 // A aba selecionada tem o fundo na cor do tema (suave); a outra fica sem fundo.
                 val fundo by androidx.compose.animation.animateColorAsState(
-                    if (ativa) androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                    if (ativa) androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
                     else androidx.compose.ui.graphics.Color.Transparent,
                     label = "aba",
                 )

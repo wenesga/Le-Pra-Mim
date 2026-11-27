@@ -74,7 +74,7 @@ fun Editor(
         if (atual != valor.text) valor = TextFieldValue(atual, TextRange(valor.selection.end.coerceAtMost(atual.length)))
     }
 
-    val corFundo = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+    val corFundo = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.22f)
     val corTexto = androidx.compose.ui.graphics.Color.Unspecified
     val corPalavra = MaterialTheme.colorScheme.primaryContainer
     val corTextoPalavra = MaterialTheme.colorScheme.onPrimaryContainer
