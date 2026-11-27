@@ -37,6 +37,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -270,7 +271,7 @@ class LeituraServico : Service() {
                     atual = i
                     Leitura._trecho.value = inicioDe(i)..frases[i].last
                     if (Leitura._situacao.value == Situacao.TOCANDO) mostrar()
-                    if (mp3.isNotEmpty()) tocar(mp3, frases[i].last - inicioDe(i) + 1)
+                    if (mp3.isNotEmpty()) tocar(mp3, inicioDe(i)..frases[i].last)
                     i++
                 }
                 encerrar()
@@ -283,7 +284,9 @@ class LeituraServico : Service() {
         }
     }
 
-    private suspend fun tocar(mp3: ByteArray, tamanho: Int) = suspendCancellableCoroutine<Unit> { k ->
+    /** Toca o áudio da frase `faixa`; com o destaque ligado, marca a palavra estimada pelo ponto do áudio. */
+    private suspend fun tocar(mp3: ByteArray, faixa: IntRange) = suspendCancellableCoroutine<Unit> { k ->
+        val tamanho = faixa.last - faixa.first + 1
         val arq = File.createTempFile("fala", ".mp3", cacheDir).apply { writeBytes(mp3) }
         val mp = MediaPlayer().apply { setAudioAttributes(atributos); setDataSource(arq.path); prepare() }
         player = mp
@@ -291,7 +294,23 @@ class LeituraServico : Service() {
         if (ms > 400 && tamanho > 8) {
             Leitura._cps.value = (Leitura._cps.value * 0.5f + tamanho * 1000f / ms * 0.5f).coerceIn(5f, 60f)
         }
+        // A Azure por REST não informa o tempo de cada palavra: estima pelo tamanho das palavras dentro da frase.
+        val palavras = Regex("\\S+").findAll(Leitura._texto.value.substring(faixa.first, faixa.last + 1))
+            .map { (faixa.first + it.range.first)..(faixa.first + it.range.last) }.toList()
+        val acumulado = palavras.runningFold(0) { soma, w -> soma + (w.last - w.first + 2) }
+        val marcador = if (prefs.destacar && palavras.size > 1) escopo.launch {
+            var ultima = -1
+            while (isActive) {
+                val f = runCatching { mp.currentPosition.toFloat() / mp.duration.coerceAtLeast(1) }.getOrDefault(0f)
+                val alvo = f * acumulado.last()
+                val n = (acumulado.indexOfLast { it <= alvo }).coerceIn(0, palavras.lastIndex)
+                if (n != ultima) { ultima = n; Leitura._palavra.value = palavras[n] }
+                delay(40)
+            }
+        } else null
         fun fim() {
+            marcador?.cancel()
+            Leitura._palavra.value = null
             runCatching { mp.release() }
             if (player === mp) player = null
             arq.delete()
@@ -299,7 +318,7 @@ class LeituraServico : Service() {
         }
         mp.setOnCompletionListener { fim() }
         mp.setOnErrorListener { _, _, _ -> fim(); true }
-        k.invokeOnCancellation { runCatching { mp.release() }; arq.delete() }
+        k.invokeOnCancellation { marcador?.cancel(); runCatching { mp.release() }; arq.delete() }
         mp.start()
     }
 
@@ -321,7 +340,8 @@ class LeituraServico : Service() {
             val base = inicioDe(i)
             palavra = base + inicio
             if (!prefs.destacar) return
-            escopo.launch { Leitura._trecho.value = (base + inicio) until (base + fim) }
+            // A frase continua marcada (suave); a palavra ganha o destaque forte.
+            escopo.launch { Leitura._palavra.value = (base + inicio) until (base + fim) }
         }
 
         override fun onDone(id: String) {

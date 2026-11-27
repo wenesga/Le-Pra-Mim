@@ -18,7 +18,7 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FileOpen
-import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AssistChip
@@ -73,6 +73,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     val exportando by vm.exportando.collectAsStateWithLifecycle()
     val texto by Leitura.texto.collectAsStateWithLifecycle()
     val trecho by Leitura.trecho.collectAsStateWithLifecycle()
+    val palavra by Leitura.palavra.collectAsStateWithLifecycle()
     val situacao by Leitura.situacao.collectAsStateWithLifecycle()
     val carregando by Leitura.carregando.collectAsStateWithLifecycle()
     val cps by Leitura.cps.collectAsStateWithLifecycle()
@@ -195,8 +196,8 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                             onClick = { menu = false; abrirTxt.launch(arrayOf("text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
                         )
                         DropdownMenuItem(
-                            text = { Text("Foto ou imagem") },
-                            leadingIcon = { Icon(Icons.Outlined.PhotoCamera, contentDescription = null) },
+                            text = { Text("Digitalizar") },
+                            leadingIcon = { Icon(Icons.Outlined.DocumentScanner, contentDescription = null) },
                             onClick = { menu = false; fotoOuImagem() },
                         )
                         DropdownMenuItem(
@@ -260,7 +261,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
         snackbarHost = { com.lepramim.ui.componentes.HostAvisos(avisos) },
     ) { margens ->
         Editor(
-            texto = texto, trecho = trecho, destacar = prefs.destacar, editavel = editando,
+            texto = texto, trecho = trecho, palavra = palavra, destacar = prefs.destacar, editavel = editando,
             tamanho = prefs.tamanho.sp, fonte = prefs.fonte.familia(),
             aoEditar = { Leitura.editar(contexto, it) },
             aoColar = colar,

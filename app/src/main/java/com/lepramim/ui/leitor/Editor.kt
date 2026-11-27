@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.sp
 import com.lepramim.leitura.Leitura
 import com.lepramim.ui.theme.Espaco
@@ -56,6 +57,7 @@ import com.lepramim.ui.theme.Espaco
 fun Editor(
     texto: String,
     trecho: IntRange?,
+    palavra: IntRange?,
     destacar: Boolean,
     editavel: Boolean,
     tamanho: Int,
@@ -74,13 +76,19 @@ fun Editor(
 
     val corFundo = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
     val corTexto = androidx.compose.ui.graphics.Color.Unspecified
-    val destaque = remember(trecho, destacar, corFundo, corTexto) {
+    val corPalavra = MaterialTheme.colorScheme.primaryContainer
+    val corTextoPalavra = MaterialTheme.colorScheme.onPrimaryContainer
+    val destaque = remember(trecho, palavra, destacar, corFundo, corTexto, corPalavra) {
         VisualTransformation { t ->
             // Com o destaque desligado a rolagem continua seguindo a leitura, só não pinta.
             val r = trecho
             val anotado = if (!destacar || r == null || r.first >= t.length) t else buildAnnotatedString {
                 append(t)
                 addStyle(SpanStyle(background = corFundo, color = corTexto), r.first, (r.last + 1).coerceAtMost(t.length))
+                // Palavra atual: destaque forte por cima da frase (só se estiver dentro dela).
+                if (palavra != null && palavra.first in r && palavra.first < t.length) {
+                    addStyle(SpanStyle(background = corPalavra, color = corTextoPalavra), palavra.first, (palavra.last + 1).coerceAtMost(t.length))
+                }
             }
             TransformedText(anotado, OffsetMapping.Identity)
         }
@@ -88,6 +96,17 @@ fun Editor(
 
     val rolagem = rememberScrollState()
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val escopo = androidx.compose.runtime.rememberCoroutineScope()
+    // Dois toques: a frase tocada sobe para o topo da tela, mesmo que já esteja visível.
+    val subirFrase: (Int) -> Unit = { posicao ->
+        val l = layout
+        if (l != null) {
+            val inicio = com.lepramim.leitura.LeituraServico.dividir(Leitura.texto.value)
+                .lastOrNull { it.first <= posicao }?.first ?: posicao
+            val topo = l.getLineTop(l.getLineForOffset(inicio.coerceAtMost(l.layoutInput.text.length - 1).coerceAtLeast(0))).toInt()
+            escopo.launch { rolagem.animateScrollTo(topo) }
+        }
+    }
     // Mantém a frase lida visível, um pouco abaixo do topo.
     LaunchedEffect(trecho?.first, layout) {
         val l = layout ?: return@LaunchedEffect
@@ -122,9 +141,11 @@ fun Editor(
                 visualTransformation = destaque,
                 onTextLayout = { layout = it },
                 // O campo ocupa a tela toda: tocar em qualquer ponto vazio leva o cursor ao fim.
+                // Fora da edição o campo fica desligado: sem seleção nem cursor. Para copiar, abre o lápis.
+                enabled = editavel,
                 readOnly = !editavel,
                 modifier = Modifier.fillMaxWidth().heightIn(min = alturaTela).padding(Espaco.gg)
-                    // Fora da edição, dois toques no texto leem dali na hora (long press continua selecionando).
+                    // Fora da edição, dois toques no texto leem dali na hora.
                     .pointerInput(editavel) {
                         if (editavel) return@pointerInput
                         // Dois toques seguidos no mesmo lugar leem dali; um só não faz nada (evita toque sem querer).
@@ -143,7 +164,9 @@ fun Editor(
                                 (cima.position - posAnterior).getDistance() < viewConfiguration.touchSlop * 4
                             if (segundo) {
                                 tempoAnterior = 0L
-                                aoTocar(l.getOffsetForPosition(cima.position))
+                                val posicao = l.getOffsetForPosition(cima.position)
+                                aoTocar(posicao)
+                                subirFrase(posicao)
                             } else {
                                 tempoAnterior = cima.uptimeMillis
                                 posAnterior = cima.position

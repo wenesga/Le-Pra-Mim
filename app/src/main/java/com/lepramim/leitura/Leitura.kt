@@ -22,6 +22,9 @@ object Leitura {
     internal val _situacao = MutableStateFlow(Situacao.PARADO)
     val texto: StateFlow<String> = _texto
     val trecho: StateFlow<IntRange?> = _trecho
+    /** Palavra que está sendo lida dentro da frase (destaque mais forte); na Azure é estimada. */
+    internal val _palavra = MutableStateFlow<IntRange?>(null)
+    val palavra: StateFlow<IntRange?> = _palavra
     val situacao: StateFlow<Situacao> = _situacao
 
     /** Esperando a voz da Azure mandar o áudio da frase (o botão de play mostra um círculo girando). */

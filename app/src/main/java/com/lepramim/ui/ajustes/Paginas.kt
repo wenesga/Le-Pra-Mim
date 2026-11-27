@@ -152,7 +152,7 @@ fun PaginaVoz(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) ->
             ControleVelocidade(vm)
         }
         Secao("Leitura") {
-            LinhaSwitch("Destacar", prefs.destacar, vm::definirDestacar, resumo = "Marca o que está sendo lido. Frase na Azure; palavra, quando o motor do aparelho informa.")
+            LinhaSwitch("Destacar", prefs.destacar, vm::definirDestacar, resumo = "Marca a palavra que está sendo lida. Na Azure ela é estimada; no aparelho, só quando o motor informa.")
         }
     }
 }
