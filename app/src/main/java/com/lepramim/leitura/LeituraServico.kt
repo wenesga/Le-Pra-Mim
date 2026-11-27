@@ -74,7 +74,9 @@ class LeituraServico : Service() {
                 Leitura._texto.value = texto
                 Leitura._trecho.value = null
                 frases = dividir(texto)
-                atual = 0
+                val inicio = intent.getIntExtra(Leitura.EXTRA_POSICAO, 0)
+                atual = frases.indexOfLast { it.first <= inicio }.coerceAtLeast(0)
+                retomar = -1
                 Leitura._situacao.value = Situacao.TOCANDO
                 mostrar()
                 escopo.launch {

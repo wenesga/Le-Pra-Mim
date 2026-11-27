@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,7 +26,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.SpanStyle
@@ -54,6 +62,7 @@ fun Editor(
     fonte: androidx.compose.ui.text.font.FontFamily,
     aoEditar: (String) -> Unit,
     aoColar: () -> Unit,
+    aoTocar: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var valor by remember { mutableStateOf(TextFieldValue(texto)) }
@@ -115,6 +124,32 @@ fun Editor(
                 // O campo ocupa a tela toda: tocar em qualquer ponto vazio leva o cursor ao fim.
                 readOnly = !editavel,
                 modifier = Modifier.fillMaxWidth().heightIn(min = alturaTela).padding(Espaco.gg)
+                    // Fora da edição, dois toques no texto leem dali na hora (long press continua selecionando).
+                    .pointerInput(editavel) {
+                        if (editavel) return@pointerInput
+                        // Dois toques seguidos no mesmo lugar leem dali; um só não faz nada (evita toque sem querer).
+                        var tempoAnterior = 0L
+                        var posAnterior = androidx.compose.ui.geometry.Offset.Zero
+                        awaitEachGesture {
+                            val baixo = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                            val cima = waitForUpOrCancellation(PointerEventPass.Initial) ?: return@awaitEachGesture
+                            val curto = cima.uptimeMillis - baixo.uptimeMillis < viewConfiguration.longPressTimeoutMillis
+                            val parado = (cima.position - baixo.position).getDistance() < viewConfiguration.touchSlop
+                            val l = layout ?: return@awaitEachGesture
+                            // Toque abaixo da última linha não conta.
+                            if (!curto || !parado || cima.position.y > l.size.height) { tempoAnterior = 0L; return@awaitEachGesture }
+                            val segundo = tempoAnterior != 0L &&
+                                cima.uptimeMillis - tempoAnterior < viewConfiguration.doubleTapTimeoutMillis &&
+                                (cima.position - posAnterior).getDistance() < viewConfiguration.touchSlop * 4
+                            if (segundo) {
+                                tempoAnterior = 0L
+                                aoTocar(l.getOffsetForPosition(cima.position))
+                            } else {
+                                tempoAnterior = cima.uptimeMillis
+                                posAnterior = cima.position
+                            }
+                        }
+                    }
                     .focusRequester(pedirFoco),
                 decorationBox = { campo ->
                     Box {
@@ -134,5 +169,43 @@ fun Editor(
                 },
             )
         }
+        // Marcador de posição na lateral direita: mostra onde o trecho visível está no texto todo.
+        var arrastando by remember { mutableStateOf(false) }
+        val vivo by androidx.compose.animation.core.animateFloatAsState(
+            if (rolagem.isScrollInProgress || arrastando) 0.8f else 0.35f, label = "marcador",
+        )
+        val cor = MaterialTheme.colorScheme.onSurfaceVariant
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val total = rolagem.maxValue
+            val vista = rolagem.viewportSize
+            if (total <= 0 || vista <= 0) return@Canvas
+            val altura = (vista.toFloat() * vista / (vista + total)).coerceAtLeast(32.dp.toPx())
+            val topo = rolagem.value.toFloat() / total * (vista - altura)
+            val largura = 4.dp.toPx()
+            drawRoundRect(
+                color = cor.copy(alpha = vivo),
+                topLeft = androidx.compose.ui.geometry.Offset(size.width - largura - 2.dp.toPx(), topo),
+                size = androidx.compose.ui.geometry.Size(largura, altura),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(largura / 2),
+            )
+        }
+        // Faixa na borda direita: arrastar por ela rola o texto (a barra acompanha o dedo).
+        Box(
+            Modifier.align(androidx.compose.ui.Alignment.CenterEnd).fillMaxHeight().width(28.dp)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = { arrastando = true },
+                        onDragEnd = { arrastando = false },
+                        onDragCancel = { arrastando = false },
+                    ) { _, dy ->
+                        val total = rolagem.maxValue
+                        val vista = rolagem.viewportSize
+                        if (total <= 0 || vista <= 0) return@detectVerticalDragGestures
+                        val altura = (vista.toFloat() * vista / (vista + total)).coerceAtLeast(32.dp.toPx())
+                        val livre = (vista - altura).coerceAtLeast(1f)
+                        rolagem.dispatchRawDelta(dy * total / livre)
+                    }
+                },
+        )
     }
 }

@@ -13,6 +13,7 @@ import com.lepramim.leitura.LeituraServico
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.lepramim.leitura.Azure
+import com.lepramim.leitura.Arquivos
 import com.lepramim.leitura.Leitura
 import com.lepramim.leitura.ErroAzure
 import com.lepramim.data.Repositorio
@@ -169,53 +170,19 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     val aviso: StateFlow<String?> = _aviso
     fun avisoLido() { _aviso.value = null }
 
-    /** Texto corrido de um .docx: um parágrafo por linha em branco, sem formatação. */
-    private fun textoDoDocx(bytes: ByteArray): String {
-        java.util.zip.ZipInputStream(bytes.inputStream()).use { zip ->
-            while (true) {
-                val e = zip.nextEntry ?: break
-                if (e.name != "word/document.xml") continue
-                val p = android.util.Xml.newPullParser()
-                p.setInput(zip, "UTF-8")
-                val sb = StringBuilder()
-                var dentro = false
-                var ev = p.eventType
-                while (ev != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
-                    when (ev) {
-                        org.xmlpull.v1.XmlPullParser.START_TAG -> when (p.name) {
-                            "t" -> dentro = true
-                            "tab" -> sb.append(' ')
-                            "br" -> sb.append('\n')
-                        }
-                        org.xmlpull.v1.XmlPullParser.TEXT -> if (dentro) sb.append(p.text)
-                        org.xmlpull.v1.XmlPullParser.END_TAG -> when (p.name) {
-                            "t" -> dentro = false
-                            "p" -> sb.append("\n\n")
-                        }
-                    }
-                    ev = p.next()
-                }
-                return sb.toString().replace(Regex("\n{3,}"), "\n\n").trim()
-            }
+    /** Reconhece o texto das imagens escaneadas ou escolhidas e põe o resultado no editor. */
+    fun lerImagens(imagens: List<Uri>) {
+        _aviso.value = "Reconhecendo o texto…"
+        com.lepramim.leitura.Imagens.texto(getApplication(), imagens) { texto ->
+            _aviso.value = if (texto == null) "Não encontrei texto na imagem" else { Leitura.editar(getApplication(), texto); null }
         }
-        error("sem texto")
     }
 
     /** Lê um arquivo TXT e põe o conteúdo no editor. Aceita UTF-8 e, se não for, Windows-1252 (TXT antigo). */
     fun importar(origem: Uri) {
         viewModelScope.launch {
             val texto = withContext(Dispatchers.IO) {
-                runCatching {
-                    val bytes = getApplication<Application>().contentResolver.openInputStream(origem)!!.use { it.readBytes() }
-                    // .docx é um zip (começa com "PK"); o texto fica em word/document.xml.
-                    if (bytes.size > 3 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'K'.code.toByte()) return@runCatching textoDoDocx(bytes)
-                    val utf8 = Charsets.UTF_8.newDecoder()
-                        .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
-                        .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
-                    runCatching { utf8.decode(java.nio.ByteBuffer.wrap(bytes)).toString() }
-                        .getOrElse { String(bytes, charset("windows-1252")) }
-                        .removePrefix("﻿").trim()
-                }.getOrNull()
+                Arquivos.texto(getApplication(), origem)
             }
             _aviso.value = when {
                 texto == null -> "Não foi possível abrir o arquivo"

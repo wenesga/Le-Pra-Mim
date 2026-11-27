@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AssistChip
@@ -95,6 +96,26 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     }
     val abrirTxt = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) vm.importar(uri)
+    }
+    // Scanner de documento do Google: câmera com os quatro cantos e correção de perspectiva, ou imagem da galeria.
+    val escanear = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
+        val resultado = com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult.fromActivityResultIntent(r.data)
+        val paginas = resultado?.pages?.map { it.imageUri }.orEmpty()
+        if (paginas.isNotEmpty()) vm.lerImagens(paginas)
+    }
+    val fotoOuImagem: () -> Unit = {
+        val opcoes = com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.Builder()
+            .setGalleryImportAllowed(true)
+            .setPageLimit(10)
+            .setResultFormats(com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+            .setScannerMode(com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.SCANNER_MODE_BASE)
+            .build()
+        val atividade = contexto as? android.app.Activity
+        if (atividade != null) {
+            com.google.mlkit.vision.documentscanner.GmsDocumentScanning.getClient(opcoes).getStartScanIntent(atividade)
+                .addOnSuccessListener { escanear.launch(androidx.activity.result.IntentSenderRequest.Builder(it).build()) }
+                .addOnFailureListener { escopo.launch { avisos.showSnackbar("O scanner não está disponível neste aparelho") } }
+        }
     }
     val exportar: () -> Unit = {
         if (prefs.chave.isBlank()) {
@@ -174,6 +195,11 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                             onClick = { menu = false; abrirTxt.launch(arrayOf("text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
                         )
                         DropdownMenuItem(
+                            text = { Text("Foto ou imagem") },
+                            leadingIcon = { Icon(Icons.Outlined.PhotoCamera, contentDescription = null) },
+                            onClick = { menu = false; fotoOuImagem() },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Copiar") }, enabled = temTexto,
                             leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
                             onClick = { menu = false; Leitura.copiarTexto(contexto) },
@@ -238,6 +264,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
             tamanho = prefs.tamanho.sp, fonte = prefs.fonte.familia(),
             aoEditar = { Leitura.editar(contexto, it) },
             aoColar = colar,
+            aoTocar = { Leitura.lerDe(contexto, it) },
             modifier = Modifier.padding(margens),
         )
     }

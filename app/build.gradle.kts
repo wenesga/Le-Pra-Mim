@@ -67,4 +67,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.mlkit.texto)
+    implementation(libs.mlkit.scanner)
 }

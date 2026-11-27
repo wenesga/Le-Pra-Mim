@@ -67,11 +67,27 @@ object Leitura {
     /** Tira só o link do fim com chamada; links no meio do texto ficam. */
     fun semChamadaFinal(texto: String) = texto.replace(chamadaFinal, "")
 
-    fun ler(c: Context, texto: String) {
+    fun ler(c: Context, texto: String, posicao: Int = 0) {
         val limpo = semChamadaFinal(texto).trim()
         if (limpo.isEmpty()) return
         inicio = System.currentTimeMillis()
-        c.startForegroundService(Intent(c, LeituraServico::class.java).setAction(ACAO_LER).putExtra(EXTRA_TEXTO, limpo))
+        c.startForegroundService(
+            Intent(c, LeituraServico::class.java).setAction(ACAO_LER)
+                .putExtra(EXTRA_TEXTO, limpo).putExtra(EXTRA_POSICAO, posicao),
+        )
+    }
+
+    /** Toque no texto: lê dali na hora, esteja parado, pausado ou tocando. */
+    fun lerDe(c: Context, posicao: Int) {
+        val texto = _texto.value
+        if (texto.isBlank()) return
+        if (_situacao.value == Situacao.PARADO) {
+            // ler() tira os espaços do começo; a posição acompanha.
+            ler(c, texto, (posicao - (texto.length - texto.trimStart().length)).coerceAtLeast(0))
+            return
+        }
+        ir(c, posicao)
+        if (_situacao.value == Situacao.PAUSADO) comando(c, ACAO_CONTINUAR)
     }
 
     /** Texto copiado, ou null se vazio ou marcado como sensível (senha de gerenciador de senhas). */
