@@ -28,17 +28,33 @@ Copie, selecione ou aponte para qualquer texto do celular e ouça. Sem precisar 
 | ⚡ **Botão Ler na Central de Controle** | Lê o último texto copiado. Texto novo troca e lê; o mesmo texto que está tocando para a leitura. |
 | 📋 **Ao abrir o app** | Se houver um texto novo copiado, a leitura começa sozinha. |
 | 🖼️ **Marcar na tela** | Pelo gesto ou botão de acessibilidade, marque um trecho da tela e ele é lido, mesmo que o texto não possa ser selecionado. O reconhecimento das letras é feito no próprio aparelho, sem internet. |
-| 📂 **Importar** | Abre arquivos **TXT** e **Word (.docx)**. |
+| 📂 **Carregar** | Abre arquivos **TXT**, **Word (.docx)** e **PDF**. PDF com texto sai direto; PDF de imagem (escaneado) é lido por reconhecimento de texto. Também chegam pelo Compartilhar, junto com imagens. |
+| 📷 **Digitalizar** | Tire uma foto ou escolha uma imagem, ajuste os cantos do documento e o texto é reconhecido no aparelho. |
+| 🌐 **Link da web** | Cole o endereço de uma página: o app baixa e guarda o texto principal dela. |
+| ✍️ **Escrever texto** | Janela própria com título e texto, que vai para a biblioteca. |
 
 > 🔒 Textos copiados de gerenciadores de senhas (marcados como sensíveis pelo Android) não são lidos nem mostrados.
 
 ### 🎧 Durante a leitura
 
-- 🟩 Trecho lido **destacado**, com o texto rolando sozinho.
-- ✏️ Dá para **editar** o texto, colar, copiar e limpar. O texto fica salvo até você limpar.
-- ⏯️ Player completo: **play, pausa, voltar e avançar**, barra que se arrasta e tempo decorrido e total.
-- 🚀 **Velocidade** ajustável na própria tela.
+- 🟩 Frase lida marcada e a **palavra atual** em destaque forte (na Azure a palavra é estimada), com o texto rolando sozinho.
+- 👆 **Dois toques** num parágrafo leem a partir dali, e a frase sobe para o topo.
+- 📏 **Barra de rolagem** na borda direita, que se arrasta para ir longe no texto.
+- ✏️ Dá para **editar** o texto (toque no lápis), colar, copiar e limpar. O texto fica salvo até você limpar.
+- ⏯️ Player compacto e **recolhível**: **play, pausa, voltar e avançar**, barra que se arrasta, tempo decorrido e total, e a **velocidade** no próprio botão.
 - 🔔 A leitura continua em segundo plano, num **player na notificação**.
+
+## 📚 Biblioteca
+
+- O que você escreve, carrega, digitaliza ou baixa de um link fica guardado na aba **Recursos**.
+- Toque num item para abrir na Leitura. Tem **busca**, **renomear** e **excluir**.
+- Os textos ficam só no aparelho, em arquivos simples.
+
+## 💾 Backup
+
+- **Fazer backup** salva a biblioteca num arquivo, onde você quiser, como o Google Drive. **Restaurar backup** traz de volta sem duplicar o que já existe.
+- **Backup automático:** Desligado, Diário ou Semanal, numa pasta que você escolhe (Google Drive ou dispositivo), atualizando sempre o mesmo arquivo.
+- Só os textos vão no backup, sem chaves nem preferências.
 
 ## 🗣️ Vozes
 
@@ -75,12 +91,13 @@ Requer **Android 11 ou mais novo**.
 
 ## 🛠️ Tecnologia
 
-Kotlin · Jetpack Compose · Material 3 · DataStore · TextToSpeech · MediaSession · AccessibilityService · ML Kit Text Recognition · Azure Speech
+Kotlin · Jetpack Compose · Material 3 · DataStore · TextToSpeech · MediaSession · AccessibilityService · ML Kit (reconhecimento de texto e scanner de documento) · PDFBox · Azure Speech
 
 ## 🔐 Privacidade
 
-- O reconhecimento de texto na tela (OCR) acontece no aparelho.
-- Nada é enviado a servidores, exceto o texto lido quando você escolhe a voz da **Azure**.
+- O reconhecimento de texto (OCR) acontece no aparelho.
+- Nada é enviado a servidores, exceto o texto lido quando você escolhe a voz da **Azure** e as páginas que você pede no **Link da web**.
+- O backup vai só para o local que você escolher, e leva apenas os textos.
 - A chave da Azure e as credenciais ficam só no aparelho.
 
 ---
