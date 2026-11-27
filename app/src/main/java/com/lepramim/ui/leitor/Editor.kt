@@ -144,6 +144,7 @@ fun Editor(
                 // Fora da edição o campo fica desligado: sem seleção nem cursor. Para copiar, abre o lápis.
                 enabled = editavel,
                 readOnly = !editavel,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().heightIn(min = alturaTela).padding(Espaco.gg)
                     // Fora da edição, dois toques no texto leem dali na hora.
                     .pointerInput(editavel) {

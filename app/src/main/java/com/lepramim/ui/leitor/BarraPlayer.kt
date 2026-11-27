@@ -19,6 +19,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import com.lepramim.ui.ajustes.formatarVelocidade
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -84,17 +85,22 @@ fun BarraPlayer(
     val fracao = if (total == 0) 0f else (posicao.toFloat() / total).coerceIn(0f, 1f)
 
     val barra: @Composable (Modifier) -> Unit = { m ->
-        Slider(
-            value = arrastando ?: fracao,
-            onValueChange = { arrastando = it },
-            onValueChangeFinished = {
-                arrastando?.let { aoIr((it * total).toInt()) }
-                arrastando = null
-            },
-            enabled = situacao != Situacao.PARADO,
-            colors = com.lepramim.ui.theme.corSlider(),
-            modifier = m,
-        )
+        // A barra fica mais baixa que os 48 dp padrão do Material, para o player ocupar menos da tela.
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.material3.LocalMinimumInteractiveComponentSize provides androidx.compose.ui.unit.Dp.Unspecified,
+        ) {
+            Slider(
+                value = arrastando ?: fracao,
+                onValueChange = { arrastando = it },
+                onValueChangeFinished = {
+                    arrastando?.let { aoIr((it * total).toInt()) }
+                    arrastando = null
+                },
+                enabled = situacao != Situacao.PARADO,
+                colors = com.lepramim.ui.theme.corSlider(),
+                modifier = m.height(28.dp),
+            )
+        }
     }
     val conteudoPlay: @Composable (Int, Int) -> Unit = { icone, indicador ->
         if (situacao == Situacao.TOCANDO && carregando) androidx.compose.material3.CircularProgressIndicator(
@@ -107,40 +113,45 @@ fun BarraPlayer(
         containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     )
 
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+    Surface(
+        // Mesma cor do fundo da aba selecionada: o tom do tema a 20% sobre a cor das barras.
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f).compositeOver(MaterialTheme.colorScheme.surfaceContainer),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shadowElevation = 6.dp,
+    ) {
         Column(
             // Com o teclado aberto a barra de navegação já está coberta; somar de novo deixava um vão.
-            Modifier.windowInsetsPadding(WindowInsets.navigationBars.exclude(WindowInsets.ime)).padding(horizontal = Espaco.gg).padding(top = Espaco.m, bottom = Espaco.m),
+            Modifier.windowInsetsPadding(WindowInsets.navigationBars.exclude(WindowInsets.ime)).padding(horizontal = Espaco.gg).padding(top = 10.dp, bottom = 4.dp),
         ) {
             AnimatedVisibility(visible = recolhido) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(44.dp), colors = corPlay) { conteudoPlay(24, 22) }
+                    FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(36.dp), colors = corPlay) { conteudoPlay(20, 18) }
                     barra(Modifier.weight(1f).padding(horizontal = Espaco.m))
-                    IconButton(onClick = { recolhido = false }) { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Expandir") }
+                    IconButton(onClick = { recolhido = false }, modifier = Modifier.size(40.dp)) { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Expandir") }
                 }
             }
             AnimatedVisibility(visible = !recolhido) { Column {
-            barra(Modifier)
-            Text(
-                Leitura.tempoTexto(arrastando?.let { (it * total).toInt() } ?: posicao, total, cps),
-                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1, softWrap = false,
-                modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            Spacer(Modifier.height(12.dp))
+            // Tempo decorrido e total nas pontas da barra (uma linha só).
+            val tempos = Leitura.tempoTexto(arrastando?.let { (it * total).toInt() } ?: posicao, total, cps).split(" / ")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(tempos.getOrElse(0) { "" }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
+                barra(Modifier.weight(1f).padding(horizontal = Espaco.m))
+                Text(tempos.getOrElse(1) { "" }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
+            }
+            Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     TextButton(onClick = { expandido = !expandido }) { Text(formatarVelocidade(velocidade)) }
                 }
-                IconButton(onClick = aoVoltar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
+                IconButton(onClick = aoVoltar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(44.dp)) {
+                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Voltar", modifier = Modifier.size(28.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
-                FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(64.dp), colors = corPlay) { conteudoPlay(32, 30) }
-                IconButton(onClick = aoAvancar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", modifier = Modifier.size(36.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
+                FilledIconButton(onClick = aoAlternar, enabled = !vazio, modifier = Modifier.size(52.dp), colors = corPlay) { conteudoPlay(26, 24) }
+                IconButton(onClick = aoAvancar, enabled = situacao != Situacao.PARADO, modifier = Modifier.size(44.dp)) {
+                    Icon(Icons.Outlined.SkipNext, contentDescription = "Avançar", modifier = Modifier.size(28.dp), tint = if (situacao != Situacao.PARADO) MaterialTheme.colorScheme.onSurface else androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.38f))
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                    IconButton(onClick = { recolhido = true }) {
+                    IconButton(onClick = { recolhido = true }, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Recolher")
                     }
                 }

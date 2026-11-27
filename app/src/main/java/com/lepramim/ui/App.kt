@@ -54,16 +54,20 @@ fun AppLeitor(vm: LeitorViewModel) {
     val navegar = { r: Rota -> pilha = pilha + r }
     val voltar = { if (pilha.size > 1) pilha = pilha.dropLast(1) }
     BackHandler(enabled = pilha.size > 1) { voltar() }
+    // O pager fica aqui para guardar a aba escolhida ao ir para outras telas e voltar.
+    val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 2 })
+    val escopoApp = androidx.compose.runtime.rememberCoroutineScope()
 
     Crossfade(pilha.last(), label = "rota") { rota ->
         when (rota) {
-            Rota.LEITOR -> Inicio(vm, avisos, navegar)
+            Rota.LEITOR -> Inicio(vm, avisos, navegar, pager)
             Rota.AJUSTES -> TelaAjustes(vm, avisos, navegar, voltar)
             Rota.VOZ -> PaginaVoz(vm, avisos, navegar, voltar)
             Rota.AZURE -> PaginaAzure(vm, avisos, voltar)
             Rota.FILTROS -> PaginaFiltros(vm, avisos, voltar)
             Rota.APARENCIA -> PaginaAparencia(vm, avisos, voltar)
             Rota.ATALHOS -> PaginaAtalhos(avisos, voltar)
+            Rota.ESCREVER -> com.lepramim.ui.leitor.TelaEscrever(vm, voltar) { voltar(); escopoApp.launch { pager.scrollToPage(0) } }
         }
     }
 }
@@ -71,8 +75,7 @@ fun AppLeitor(vm: LeitorViewModel) {
 /** Início: abas Leitura e Recursos no topo de tudo; também dá para deslizar de uma para a outra. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -> Unit) {
-    val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 2 })
+private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -> Unit, pager: androidx.compose.foundation.pager.PagerState) {
     val escopo = androidx.compose.runtime.rememberCoroutineScope()
     val irPara: (Int) -> Unit = { escopo.launch { pager.animateScrollToPage(it) } }
     BackHandler(enabled = pager.currentPage == 1) { irPara(0) }
@@ -128,7 +131,7 @@ private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
             // A barra de status já é coberta pelas abas; as páginas não somam o espaço de novo.
             modifier = androidx.compose.ui.Modifier.weight(1f).consumeWindowInsets(androidx.compose.foundation.layout.WindowInsets.statusBars),
         ) { pagina ->
-            if (pagina == 0) TelaLeitor(vm, avisos, navegar) else com.lepramim.ui.leitor.PaginaRecursos(vm, avisos) { irPara(0) }
+            if (pagina == 0) TelaLeitor(vm, avisos, navegar) else com.lepramim.ui.leitor.PaginaRecursos(vm, avisos, navegar) { irPara(0) }
         }
     }
 }

@@ -31,6 +31,65 @@ data class Voz(val id: String, val nome: String)
 
 class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = Repositorio(app)
+    private val bib = com.lepramim.data.Biblioteca(app)
+
+    private val _biblioteca = MutableStateFlow<List<com.lepramim.data.ItemBiblioteca>>(emptyList())
+    val biblioteca: StateFlow<List<com.lepramim.data.ItemBiblioteca>> = _biblioteca
+    private fun recarregarBiblioteca() {
+        viewModelScope.launch { _biblioteca.value = withContext(Dispatchers.IO) { bib.listar() } }
+    }
+    init { recarregarBiblioteca() }
+
+    /** Título quando a pessoa não dá um: as primeiras palavras do texto. */
+    private fun tituloDe(texto: String) =
+        texto.trim().lineSequence().firstOrNull().orEmpty().trim().take(40).ifEmpty { "Sem título" }
+
+    /** Nome do arquivo escolhido, sem a extensão. */
+    private fun nomeDoArquivo(origem: Uri): String? = runCatching {
+        getApplication<Application>().contentResolver.query(origem, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { if (it.moveToFirst()) it.getString(0) else null }
+            ?.substringBeforeLast('.')?.trim()?.ifEmpty { null }
+    }.getOrNull()
+
+    /** Guarda o texto na biblioteca e devolve a lista atualizada. */
+    private suspend fun guardar(titulo: String, texto: String) {
+        withContext(Dispatchers.IO) { bib.salvar(titulo.trim().ifEmpty { tituloDe(texto) }, texto) }
+        _biblioteca.value = withContext(Dispatchers.IO) { bib.listar() }
+    }
+
+    /** Escrever texto: guarda na biblioteca e deixa o texto pronto na Leitura, sem tocar sozinho. */
+    fun guardarEAbrir(titulo: String, texto: String) {
+        viewModelScope.launch {
+            guardar(titulo, texto)
+            Leitura.editar(getApplication(), texto)
+        }
+    }
+
+    /** Link da web: baixa a página, tira o texto e guarda na biblioteca. */
+    fun guardarLink(entrada: String) {
+        _aviso.value = "Lendo a página…"
+        viewModelScope.launch {
+            val pagina = withContext(Dispatchers.IO) { com.lepramim.leitura.Web.ler(entrada) }
+            _aviso.value = when {
+                pagina == null -> "Não foi possível abrir o link"
+                pagina.second.isBlank() -> "Não encontrei texto na página"
+                else -> { guardar(pagina.first, pagina.second); "Guardado na biblioteca" }
+            }
+        }
+    }
+
+    /** Abre um item da biblioteca na Leitura. */
+    fun abrirDaBiblioteca(item: com.lepramim.data.ItemBiblioteca) = Leitura.editar(getApplication(), item.texto)
+
+    fun renomearItem(id: String, titulo: String) {
+        val novo = titulo.trim()
+        if (novo.isEmpty()) return
+        viewModelScope.launch { withContext(Dispatchers.IO) { bib.renomear(id, novo) }; recarregarBiblioteca() }
+    }
+
+    fun excluirItem(id: String) {
+        viewModelScope.launch { withContext(Dispatchers.IO) { bib.excluir(id) }; recarregarBiblioteca() }
+    }
     val prefs: StateFlow<Preferencias> = repo.preferencias.stateIn(viewModelScope, SharingStarted.Eagerly, Preferencias())
 
     private val _vozes = MutableStateFlow<List<Voz>>(emptyList())
@@ -181,7 +240,7 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
         _aviso.value = "Lendo o PDF… pode demorar"
         viewModelScope.launch {
             val texto = withContext(Dispatchers.IO) { com.lepramim.leitura.Imagens.pdf(getApplication(), origem) }
-            _aviso.value = if (texto == null) "Não foi possível ler o PDF" else { Leitura.editar(getApplication(), texto); null }
+            _aviso.value = if (texto == null) "Não foi possível ler o PDF" else { guardar(nomeDoArquivo(origem) ?: "", texto); "Guardado na biblioteca" }
         }
     }
 
@@ -189,7 +248,12 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     fun lerImagens(imagens: List<Uri>) {
         _aviso.value = "Reconhecendo o texto…"
         com.lepramim.leitura.Imagens.texto(getApplication(), imagens) { texto ->
-            _aviso.value = if (texto == null) "Não encontrei texto na imagem" else { Leitura.editar(getApplication(), texto); null }
+            if (texto == null) { _aviso.value = "Não encontrei texto na imagem"; return@texto }
+            viewModelScope.launch {
+                val hora = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale("pt", "BR")).format(java.util.Date())
+                guardar("Digitalização $hora", texto)
+                _aviso.value = "Guardado na biblioteca"
+            }
         }
     }
 
@@ -203,7 +267,7 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
             _aviso.value = when {
                 texto == null -> "Não foi possível abrir o arquivo"
                 texto.isEmpty() -> "O arquivo está vazio"
-                else -> { Leitura.editar(getApplication(), texto); null }
+                else -> { guardar(nomeDoArquivo(origem) ?: "", texto); "Guardado na biblioteca" }
             }
         }
     }

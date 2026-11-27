@@ -55,21 +55,45 @@ import com.lepramim.ui.LeitorViewModel
 import com.lepramim.ui.componentes.HostAvisos
 import com.lepramim.ui.theme.Espaco
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lepramim.data.ItemBiblioteca
+import com.lepramim.ui.Rota
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Aba Recursos: de onde vem o texto. */
 @Composable
-fun PaginaRecursos(vm: LeitorViewModel, avisos: SnackbarHostState, aoVoltar: () -> Unit) {
+fun PaginaRecursos(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -> Unit, aoAbrir: () -> Unit) {
     val contexto = LocalContext.current
     val escopo = rememberCoroutineScope()
+    var linkAberto by rememberSaveable { mutableStateOf(false) }
 
     val abrirDocumento = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) { vm.importar(uri); aoVoltar() }
+        if (uri != null) vm.importar(uri)
     }
     // Scanner de documento do Google: câmera com os quatro cantos e correção de perspectiva, ou imagem da galeria.
     val escanear = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
         val resultado = GmsDocumentScanningResult.fromActivityResultIntent(r.data)
         val paginas = resultado?.pages?.map { it.imageUri }.orEmpty()
-        if (paginas.isNotEmpty()) { vm.lerImagens(paginas); aoVoltar() }
+        if (paginas.isNotEmpty()) vm.lerImagens(paginas)
     }
     val digitalizar: () -> Unit = {
         val opcoes = GmsDocumentScannerOptions.Builder()
@@ -100,11 +124,110 @@ fun PaginaRecursos(vm: LeitorViewModel, avisos: SnackbarHostState, aoVoltar: () 
                 Cartao("Digitalizar", listOf("Câmera", "Imagem"), digitalizar) { IconeGrande(Icons.Outlined.DocumentScanner) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
-                Cartao("Escrever texto", listOf("Digitar", "Colar"), { vm.pedirEdicao(); aoVoltar() }) { IconeGrande(Icons.Outlined.Edit) }
-                Spacer(Modifier.weight(1f))
+                Cartao("Link da web", listOf("Site", "Artigo"), { linkAberto = true }) { IconeGrande(Icons.Outlined.Link) }
+                Cartao("Escrever texto", listOf("Digitar", "Colar"), { navegar(Rota.ESCREVER) }) { IconeGrande(Icons.Outlined.Edit) }
             }
         }
+        Secao("Biblioteca") { ListaBiblioteca(vm, aoAbrir) }
+        if (linkAberto) DialogoLink(aoConfirmar = { vm.guardarLink(it); linkAberto = false }, aoCancelar = { linkAberto = false })
     }
+    }
+}
+
+/** Pede o endereço da página para guardar o texto dela na biblioteca. */
+@Composable
+private fun DialogoLink(aoConfirmar: (String) -> Unit, aoCancelar: () -> Unit) {
+    val contexto = LocalContext.current
+    // Se o que foi copiado é um link, já vem no campo.
+    var endereco by rememberSaveable {
+        mutableStateOf(com.lepramim.leitura.Leitura.copiado(contexto)?.trim()?.takeIf { it.startsWith("http", ignoreCase = true) && !it.contains(' ') }.orEmpty())
+    }
+    AlertDialog(
+        onDismissRequest = aoCancelar,
+        title = { Text("Link da web") },
+        text = {
+            OutlinedTextField(
+                value = endereco, onValueChange = { endereco = it },
+                placeholder = { Text("https://exemplo.com/…") },
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri),
+            )
+        },
+        confirmButton = { TextButton(onClick = { aoConfirmar(endereco) }, enabled = endereco.isNotBlank()) { Text("Continuar") } },
+        dismissButton = { TextButton(onClick = aoCancelar) { Text("Cancelar") } },
+    )
+}
+
+/** Textos guardados: toque abre na Leitura; o menu renomeia ou exclui. */
+@Composable
+private fun ListaBiblioteca(vm: LeitorViewModel, aoAbrir: () -> Unit) {
+    val itens by vm.biblioteca.collectAsStateWithLifecycle()
+    var busca by rememberSaveable { mutableStateOf("") }
+    var renomear by remember { mutableStateOf<ItemBiblioteca?>(null) }
+    var excluir by remember { mutableStateOf<ItemBiblioteca?>(null) }
+
+    if (itens.isEmpty()) {
+        Text("Nada guardado ainda. O que você escrever, carregar ou digitalizar fica aqui.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    OutlinedTextField(
+        value = busca, onValueChange = { busca = it },
+        placeholder = { Text("Buscar") },
+        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+        singleLine = true, modifier = Modifier.fillMaxWidth(),
+    )
+    val visiveis = itens.filter { busca.isBlank() || it.titulo.contains(busca, ignoreCase = true) || it.texto.contains(busca, ignoreCase = true) }
+    if (visiveis.isEmpty()) Text("Nada encontrado.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    visiveis.forEach { item ->
+        LinhaBiblioteca(item, aoAbrir = { vm.abrirDaBiblioteca(item); aoAbrir() }, aoRenomear = { renomear = item }, aoExcluir = { excluir = item })
+    }
+
+    renomear?.let { item ->
+        var novo by remember(item.id) { mutableStateOf(item.titulo) }
+        AlertDialog(
+            onDismissRequest = { renomear = null },
+            title = { Text("Renomear") },
+            text = { OutlinedTextField(value = novo, onValueChange = { novo = it }, singleLine = true) },
+            confirmButton = { TextButton(onClick = { vm.renomearItem(item.id, novo); renomear = null }, enabled = novo.isNotBlank()) { Text("Salvar") } },
+            dismissButton = { TextButton(onClick = { renomear = null }) { Text("Cancelar") } },
+        )
+    }
+    excluir?.let { item ->
+        AlertDialog(
+            onDismissRequest = { excluir = null },
+            title = { Text("Excluir") },
+            text = { Text("Excluir \"${item.titulo}\" da biblioteca? Não dá para desfazer.") },
+            confirmButton = { TextButton(onClick = { vm.excluirItem(item.id); excluir = null }) { Text("Excluir") } },
+            dismissButton = { TextButton(onClick = { excluir = null }) { Text("Cancelar") } },
+        )
+    }
+}
+
+@Composable
+private fun LinhaBiblioteca(item: ItemBiblioteca, aoAbrir: () -> Unit, aoRenomear: () -> Unit, aoExcluir: () -> Unit) {
+    var menu by remember { mutableStateOf(false) }
+    val data = remember(item.criado) { SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date(item.criado)) }
+    val tamanho = remember(item.texto) { String.format(Locale("pt", "BR"), "%,d", item.texto.length) }
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = aoAbrir).padding(start = Espaco.g, top = Espaco.m, bottom = Espaco.m),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Outlined.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
+        Column(Modifier.weight(1f).padding(horizontal = Espaco.g)) {
+            Text(item.titulo, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("$data · $tamanho car.", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Box {
+            IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "Mais") }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(text = { Text("Renomear") }, onClick = { menu = false; aoRenomear() })
+                DropdownMenuItem(text = { Text("Excluir") }, onClick = { menu = false; aoExcluir() })
+            }
+        }
     }
 }
 
