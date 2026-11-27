@@ -10,23 +10,19 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** Cor de destaque do app (padrão dos apps do Wenes). */
-enum class CorDestaque(
-    /** Tom claro: texto, links e ícones no escuro. */
-    val hex: Long, val nome: String,
-    /** Tom forte no tema claro (botões, texto branco por cima). */
-    val claro: Long,
-    /** Tom forte no tema escuro (botões e seleções, texto branco por cima). */
-    val forteEscuro: Long,
-) {
+/** Tons de uma cor num tema: botão (e texto/ícone destacado), texto sobre o botão, fundo suave e texto sobre o suave. */
+class Tom(val botao: Long, val noBotao: Long, val suave: Long, val noSuave: Long)
+
+/** Cor de destaque do app (padrão dos apps do Wenes): botão e suave, no claro e no escuro. */
+enum class CorDestaque(val nome: String, val claro: Tom, val escuro: Tom) {
     /** Android 12+: cor do papel de parede; os valores são só reserva. */
-    AUTOMATICA(0xFF888888, "Automática", 0xFF888888, 0xFF888888),
-    AZUL(0xFF60A5FA, "Azul", 0xFF3D7FEF, 0xFF2F6FEB),
-    VERDE(0xFF4ADE80, "Verde", 0xFF0E9F6E, 0xFF0E9F6E),
-    ROXO(0xFFB794F6, "Roxo", 0xFF8E6BD6, 0xFF8E6BD6),
-    TURQUESA(0xFF4DB6AC, "Turquesa", 0xFF1F8F85, 0xFF1F8F85),
-    LARANJA(0xFFF4A261, "Laranja", 0xFFD9803A, 0xFFD9803A),
-    ROSA(0xFFFB7185, "Rosa", 0xFFD9638A, 0xFFD9638A),
+    AUTOMATICA("Automática", Tom(0xFF50545E, 0xFFFFFFFF, 0xFFE3E5E8, 0xFF1B1C1E), Tom(0xFFC2C5CB, 0xFF1B1C1E, 0xFF3D4148, 0xFFE3E5E8)),
+    AZUL("Azul", Tom(0xFF1D56A5, 0xFFFFFFFF, 0xFFD1E2FA, 0xFF0B203D), Tom(0xFF9DC0F1, 0xFF0C1C31, 0xFF243D60, 0xFFD6E3F5)),
+    AZUL_ACO("Azul-aço", Tom(0xFF3F6383, 0xFFFFFFFF, 0xFFDEE6ED, 0xFF0B253D), Tom(0xFFB0C8DD, 0xFF0C2031, 0xFF344351, 0xFFD6E7F5)),
+    VERDE("Verde", Tom(0xFF257E5E, 0xFFFFFFFF, 0xFFE0F0EA, 0xFF0B3D2A), Tom(0xFF80C6B1, 0xFF0C3126, 0xFF283E37, 0xFFD6F5EC)),
+    TURQUESA("Turquesa", Tom(0xFF2D7670, 0xFFFFFFFF, 0xFFDCEAE9, 0xFF0B3D39), Tom(0xFF81CFC9, 0xFF0C312E, 0xFF2A4644, 0xFFD6F5F2)),
+    LARANJA("Laranja", Tom(0xFF946E4C, 0xFFFFFFFF, 0xFFF0EAE5, 0xFF3D220B), Tom(0xFFF1C09D, 0xFF311C0C, 0xFF603D24, 0xFFF5E3D6)),
+    CINZA("Cinza", Tom(0xFF50545E, 0xFFFFFFFF, 0xFFE3E5E8, 0xFF0B1B3D), Tom(0xFFC2C5CB, 0xFF0C1831, 0xFF3D4148, 0xFFD6E0F5)),
 }
 
 /** Fundo do tema escuro (as variações do Ciclo Treino; independe da cor de destaque). */

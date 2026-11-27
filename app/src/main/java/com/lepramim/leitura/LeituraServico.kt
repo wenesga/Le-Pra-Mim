@@ -412,7 +412,7 @@ class LeituraServico : Service() {
         val c = prefs.cor
         if (c == com.lepramim.data.CorDestaque.AUTOMATICA && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S)
             return getColor(android.R.color.system_accent1_600)
-        return c.forteEscuro.toInt()
+        return c.claro.botao.toInt()
     }
 
     private fun capa(): Bitmap {

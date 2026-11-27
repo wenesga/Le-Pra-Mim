@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.lepramim.ui.ajustes.VOZES_AZURE_PADRAO
 import com.lepramim.ui.ajustes.nomeDaVozAzure
+import com.lepramim.ui.componentes.sombraFaixa
 import com.lepramim.ui.theme.Espaco
 import com.lepramim.ui.theme.familia
 import kotlinx.coroutines.launch
@@ -101,7 +102,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     val exportar: () -> Unit = {
         if (prefs.chave.isBlank()) {
             escopo.launch {
-                val r = avisos.showSnackbar("O MP3 usa a voz da Azure.", actionLabel = "Ajustes")
+                val r = avisos.showSnackbar("O MP3 usa a voz da Azure.", actionLabel = "Configurações")
                 if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) navegar(Rota.AZURE)
             }
         } else {
@@ -118,14 +119,14 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
     Scaffold(
         modifier = Modifier.imePadding(),
         topBar = {
-            androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+            androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.sombraFaixa(paraCima = false)) {
             Column {
             TopAppBar(
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent, scrolledContainerColor = Color.Transparent,
                 ),
                 title = {
-                    // O seletor só existe com a Azure; a voz do aparelho se escolhe em Ajustes.
+                    // O seletor só existe com a Azure; a voz do aparelho se escolhe em Configurações.
                     if (prefs.azure) {
                         val vozesAzure by vm.vozesAzure.collectAsStateWithLifecycle()
                         val opcoes = vozesAzure.map { it.id to it.nome }.ifEmpty { VOZES_AZURE_PADRAO }
@@ -138,7 +139,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                             )
                             // Um toque na voz já troca, e a leitura continua do ponto em que estava.
                             DropdownMenu(expanded = vozAberta, onDismissRequest = { vozAberta = false }) {
-                                // Só as favoritas (definidas em Ajustes → Voz); sem favoritas, todas.
+                                // Só as favoritas (definidas em Configurações → Voz); sem favoritas, todas.
                                 val lista = opcoes.filter { it.first in prefs.favoritas || it.first == prefs.vozAzure }
                                     .takeIf { prefs.favoritas.isNotEmpty() } ?: opcoes
                                 lista.forEach { (id, nome) ->
@@ -211,7 +212,7 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                 if (prefs.azure) androidx.compose.material3.LinearProgressIndicator(
                     progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
                     modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
+                    color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 trackColor = com.lepramim.ui.theme.trilhoBarra(),
                 )
             }

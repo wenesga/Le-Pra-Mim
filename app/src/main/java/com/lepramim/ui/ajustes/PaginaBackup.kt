@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.data.FrequenciaBackup
 import com.lepramim.ui.LeitorViewModel
 import com.lepramim.ui.componentes.Pagina
+import com.lepramim.ui.componentes.sombraCartao
 import com.lepramim.ui.theme.Espaco
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -66,7 +67,7 @@ fun PaginaBackup(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> U
             LinhaBackup(Icons.Outlined.History, "Restaurar backup", "Restaura a biblioteca") { abrir.launch(arrayOf("*/*")) }
 
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Espaco.gg),
+                Modifier.fillMaxWidth().sombraCartao(RoundedCornerShape(16.dp)).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Espaco.gg),
                 verticalArrangement = Arrangement.spacedBy(Espaco.g),
             ) {
                 Text("Backup automático", style = MaterialTheme.typography.bodyLarge)
@@ -96,7 +97,7 @@ fun PaginaBackup(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> U
 @Composable
 private fun LinhaBackup(icone: ImageVector, titulo: String, resumo: String? = null, ativo: Boolean = true, aoClicar: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().alpha(if (ativo) 1f else 0.5f).clip(RoundedCornerShape(16.dp))
+        Modifier.fillMaxWidth().alpha(if (ativo) 1f else 0.5f).sombraCartao(RoundedCornerShape(16.dp)).clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(enabled = ativo, onClick = aoClicar).padding(Espaco.gg),
         verticalAlignment = Alignment.CenterVertically,

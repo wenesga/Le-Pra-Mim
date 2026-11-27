@@ -121,16 +121,24 @@ fun TelaAjustes(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) 
         Triple(Rota.ATALHOS, Icons.Outlined.TouchApp, "Marcar na tela: " + if (acessibilidade) "ligado" else "desligado"),
     )
     Pagina(Rota.AJUSTES.titulo, voltar, avisos) {
-        Column {
+        Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Espaco.m)) {
             itens.forEach { (rota, icone, resumo) ->
-                ListItem(
-                    modifier = Modifier.clickable { navegar(rota) },
-                    leadingContent = { Icon(icone, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    headlineContent = { Text(rota.titulo) },
-                    supportingContent = { Text(resumo) },
-                    trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                )
+                // Cartão com cantos arredondados e uma sombra leve, como na tela de Backup.
+                androidx.compose.material3.Surface(
+                    onClick = { navegar(rota) },
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 3.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    ListItem(
+                        leadingContent = { Icon(icone, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        headlineContent = { Text(rota.titulo) },
+                        supportingContent = { Text(resumo) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
+                }
             }
         }
     }
@@ -207,7 +215,7 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
             LinearProgressIndicator(
                 progress = { (usados.toFloat() / cota).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth(),
-                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
+                color = if (perto) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 trackColor = com.lepramim.ui.theme.trilhoBarra(),
             )
             Text(
@@ -217,29 +225,34 @@ fun PaginaAzure(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> Un
             )
         }
         var avancado by remember { mutableStateOf(false) }
-        Row(
-            Modifier.fillMaxWidth().clickable { avancado = !avancado },
-            verticalAlignment = Alignment.CenterVertically,
+        androidx.compose.material3.Surface(
+            onClick = { avancado = !avancado },
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shadowElevation = 3.dp,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(Modifier.weight(1f)) {
-                Text("Avançado", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                Text(
-                    "Consumo lido do portal da Azure",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(Modifier.padding(Espaco.gg), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Avançado", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Consumo lido do portal da Azure",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null, tint = MaterialTheme.colorScheme.primary,
                 )
             }
-            Icon(
-                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                contentDescription = null, tint = MaterialTheme.colorScheme.primary,
-            )
         }
         if (avancado) ModalBottomSheet(onDismissRequest = { avancado = false }) {
           Column(
             Modifier.navigationBarsPadding().imePadding().verticalScroll(rememberScrollState())
                 .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
           ) {
-          Secao("Consumo no portal") {
+          Secao("Consumo no portal", cartao = false) {
             val mensagemMonitor by vm.mensagemMonitor.collectAsStateWithLifecycle()
             val travado = prefs.monSegredo.isNotEmpty()
             var app by remember(prefs.monApp) { mutableStateOf(prefs.monApp) }
@@ -407,7 +420,17 @@ fun PaginaAtalhos(avisos: SnackbarHostState, voltar: () -> Unit) {
     val ligada = rememberAcessibilidade()
     val semFundo = ListItemDefaults.colors(containerColor = Color.Transparent)
     Pagina(Rota.ATALHOS.titulo, voltar, avisos) {
-        Column {
+        val cartao: @Composable (@Composable () -> Unit) -> Unit = { conteudo ->
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth(),
+                content = conteudo,
+            )
+        }
+        Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Espaco.m)) {
+            cartao {
             ListItem(
                 colors = semFundo,
                 leadingContent = { Icon(Icons.Outlined.AccessibilityNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
@@ -419,12 +442,15 @@ fun PaginaAtalhos(avisos: SnackbarHostState, voltar: () -> Unit) {
                     }) { Text(if (ligada) "Alterar" else "Ativar") }
                 },
             )
+            }
+            cartao {
             ListItem(
                 colors = semFundo,
                 leadingContent = { Icon(Icons.Outlined.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 headlineContent = { Text("Botão Ler") },
                 supportingContent = { Text("Para ler o texto copiado: puxe a Central de Controle, toque em Editar e arraste o botão Ler.") },
             )
+            }
         }
     }
 }

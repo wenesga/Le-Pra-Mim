@@ -94,7 +94,7 @@ private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
             selectedTabIndex = pager.currentPage,
             modifier = androidx.compose.ui.Modifier.weight(1f),
             containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+            contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
             divider = {},
             indicator = {
                 // Fino e arredondado em cima, na cor forte do tema.
@@ -102,7 +102,7 @@ private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
                     androidx.compose.ui.Modifier.tabIndicatorOffset(pager.currentPage)
                         .height(3.dp)
                         .background(
-                            androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
+                            androidx.compose.material3.MaterialTheme.colorScheme.primary,
                             androidx.compose.foundation.shape.RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp),
                         ),
                 )
@@ -112,7 +112,7 @@ private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
                 val ativa = pager.currentPage == i
                 // A aba selecionada tem o fundo na cor do tema (suave); a outra fica sem fundo.
                 val fundo by androidx.compose.animation.animateColorAsState(
-                    if (ativa) androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                    if (ativa) androidx.compose.material3.MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                     else androidx.compose.ui.graphics.Color.Transparent,
                     label = "aba",
                 )
@@ -125,7 +125,7 @@ private fun Inicio(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
             }
         }
         androidx.compose.material3.IconButton(onClick = { navegar(Rota.AJUSTES) }) {
-            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.Settings, contentDescription = "Ajustes", tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurface)
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.Settings, contentDescription = "Configurações", tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurface)
         }
         }
         androidx.compose.foundation.pager.HorizontalPager(

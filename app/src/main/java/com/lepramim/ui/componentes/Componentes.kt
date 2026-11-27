@@ -38,6 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.lepramim.ui.theme.Espaco
@@ -50,8 +55,8 @@ fun HostAvisos(avisos: SnackbarHostState) {
         Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Surface(
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shadowElevation = 6.dp,
             ) {
                 Row(
@@ -60,7 +65,7 @@ fun HostAvisos(avisos: SnackbarHostState) {
                 ) {
                     Text(dados.visuals.message, style = MaterialTheme.typography.bodyMedium)
                     if (acao != null) androidx.compose.material3.TextButton(onClick = { dados.performAction() }) {
-                        Text(acao, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        Text(acao, color = MaterialTheme.colorScheme.onPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                     }
                 }
             }
@@ -96,15 +101,49 @@ fun Pagina(
     }
 }
 
-/** Grupo de ajustes com título na cor de destaque. */
+/** Sombra dos cartões (vale para todos): o suave da cor sozinho quase não se destaca do fundo, principalmente no tema claro. */
+fun Modifier.sombraCartao(forma: androidx.compose.ui.graphics.Shape) = this.shadow(3.dp, forma)
+
+/**
+ * Sombra de uma faixa fixa (painel de cima ou de baixo) sobre o texto: a sombra padrão do Android cai para o lado
+ * errado e some, então esta é desenhada na divisão, do tamanho da faixa e centrada.
+ */
 @Composable
-fun Secao(titulo: String, neutro: Boolean = false, conteudo: @Composable ColumnScope.() -> Unit) {
+fun Modifier.sombraFaixa(paraCima: Boolean): Modifier {
+    val escuro = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val intensidade = if (escuro) 0.22f else 0.08f
+    return this.drawBehind {
+        val altura = 18.dp.toPx()
+        val cor = androidx.compose.ui.graphics.Color.Black.copy(alpha = intensidade)
+        val transparente = androidx.compose.ui.graphics.Color.Transparent
+        if (paraCima) drawRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(transparente, cor), startY = -altura, endY = 0f),
+            topLeft = androidx.compose.ui.geometry.Offset(0f, -altura),
+            size = androidx.compose.ui.geometry.Size(size.width, altura),
+        ) else drawRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(cor, transparente), startY = size.height, endY = size.height + altura),
+            topLeft = androidx.compose.ui.geometry.Offset(0f, size.height),
+            size = androidx.compose.ui.geometry.Size(size.width, altura),
+        )
+    }
+}
+
+/** Grupo de ajustes: título e, por padrão, o conteúdo dentro de um cartão com sombra. */
+@Composable
+fun Secao(titulo: String, neutro: Boolean = false, cartao: Boolean = true, conteudo: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Espaco.g)) {
         Text(
             titulo, style = MaterialTheme.typography.titleSmall,
             color = if (neutro) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
         )
-        conteudo()
+        if (cartao) {
+            val forma = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+            Column(
+                Modifier.fillMaxWidth().sombraCartao(forma).clip(forma)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(Espaco.gg),
+                verticalArrangement = Arrangement.spacedBy(Espaco.g),
+            ) { conteudo() }
+        } else conteudo()
     }
 }
 
@@ -115,7 +154,7 @@ fun LinhaSwitch(titulo: String, marcado: Boolean, aoMudar: (Boolean) -> Unit, re
             Text(titulo, style = MaterialTheme.typography.bodyLarge)
             if (resumo != null) Text(resumo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = marcado, onCheckedChange = aoMudar, colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primaryContainer, checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer, checkedBorderColor = MaterialTheme.colorScheme.primaryContainer))
+        Switch(checked = marcado, onCheckedChange = aoMudar, colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary, checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedBorderColor = MaterialTheme.colorScheme.primary))
     }
 }
 

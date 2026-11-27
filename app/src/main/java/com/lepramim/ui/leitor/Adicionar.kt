@@ -76,6 +76,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lepramim.data.ItemBiblioteca
 import com.lepramim.ui.Rota
+import com.lepramim.ui.componentes.sombraCartao
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -116,7 +117,7 @@ fun PaginaRecursos(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
         Modifier.fillMaxSize().padding(margens).verticalScroll(rememberScrollState()).padding(Espaco.gg),
         verticalArrangement = Arrangement.spacedBy(Espaco.xg),
     ) {
-        Secao("Recursos") {
+        Secao("Recursos", neutro = true, cartao = false) {
             Row(horizontalArrangement = Arrangement.spacedBy(Espaco.g)) {
                 Cartao(
                     "Carregar", listOf("TXT", "DOCX", "PDF"),
@@ -129,7 +130,7 @@ fun PaginaRecursos(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rot
                 Cartao("Escrever texto", listOf("Digitar", "Colar"), { navegar(Rota.ESCREVER) }) { IconeGrande(Icons.Outlined.Edit) }
             }
         }
-        Secao("Biblioteca") { ListaBiblioteca(vm, aoAbrir) }
+        Secao("Biblioteca", neutro = true, cartao = false) { ListaBiblioteca(vm, aoAbrir) }
         if (linkAberto) DialogoLink(aoConfirmar = { vm.guardarLink(it); linkAberto = false }, aoCancelar = { linkAberto = false })
     }
     }
@@ -210,7 +211,7 @@ private fun LinhaBiblioteca(item: ItemBiblioteca, aoAbrir: () -> Unit, aoRenomea
     val data = remember(item.criado) { SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date(item.criado)) }
     val tamanho = remember(item.texto) { String.format(Locale("pt", "BR"), "%,d", item.texto.length) }
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        Modifier.fillMaxWidth().sombraCartao(RoundedCornerShape(16.dp)).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = aoAbrir).padding(start = Espaco.g, top = Espaco.m, bottom = Espaco.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -235,11 +236,11 @@ private fun LinhaBiblioteca(item: ItemBiblioteca, aoAbrir: () -> Unit, aoRenomea
 /** Cartão de entrada: fundo em degradê na cor do tema, brilho atrás do ícone e só o nome embaixo. */
 @Composable
 private fun RowScope.Cartao(titulo: String, etiquetas: List<String>, aoClicar: () -> Unit, figura: @Composable () -> Unit) {
-    val forte = MaterialTheme.colorScheme.primaryContainer
+    val forte = MaterialTheme.colorScheme.primary
     val base = MaterialTheme.colorScheme.surfaceContainerHigh
     val forma = RoundedCornerShape(20.dp)
     Box(
-        Modifier.weight(1f).clip(forma)
+        Modifier.weight(1f).sombraCartao(forma).clip(forma)
             .background(base)
             .clickable(onClick = aoClicar),
     ) {
@@ -259,9 +260,9 @@ private fun Etiqueta(texto: String) {
     Text(
         texto, maxLines = 1, softWrap = false,
         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 12.sp),
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = MaterialTheme.colorScheme.onPrimary,
         modifier = Modifier.clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.primaryContainer)
+            .background(MaterialTheme.colorScheme.primary)
             .padding(horizontal = 6.dp, vertical = 1.dp),
     )
 }

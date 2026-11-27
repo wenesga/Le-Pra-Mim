@@ -70,7 +70,7 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             val ok = com.lepramim.data.Backup.gravarNaPasta(getApplication(), Uri.parse(pasta), bib.exportar())
             if (ok) repo.definirUltimoBackup(agora)
-            else _aviso.value = "Não consegui gravar o backup. Escolha o local de novo em Ajustes → Backup."
+            else _aviso.value = "Não consegui gravar o backup. Escolha o local de novo em Configurações → Backup."
         }
     }
 

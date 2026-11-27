@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lepramim.leitura.Leitura
 import com.lepramim.leitura.Situacao
+import com.lepramim.ui.componentes.sombraFaixa
 import com.lepramim.ui.theme.Espaco
 import java.util.Locale
 
@@ -110,13 +111,13 @@ fun BarraPlayer(
         else Icon(Icons.Outlined.PlayArrow, contentDescription = "Ler", modifier = Modifier.size(icone.dp))
     }
     val corPlay = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
-        containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
     )
 
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        shadowElevation = 6.dp,
+        modifier = Modifier.sombraFaixa(paraCima = true),
     ) {
         Column(
             // Com o teclado aberto a barra de navegação já está coberta; somar de novo deixava um vão.

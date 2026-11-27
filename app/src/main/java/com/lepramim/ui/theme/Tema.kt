@@ -75,63 +75,48 @@ private fun fundoDe(f: FundoEscuro) = when (f) {
     FundoEscuro.ROXO_PROFUNDO -> derivado(0xFF14101D)
 }
 
-/** Tons de uma cor: texto/ícones no escuro (claro) e botão (forte). A Automática vem do papel de parede. */
-private class Tons(val texto: Color, val forte: Color)
+/** Tons de uma cor no tema atual: botão, texto no botão, suave e texto no suave. A Automática vem do papel de parede. */
+private class Tons(val botao: Color, val noBotao: Color, val suave: Color, val noSuave: Color)
 
 private fun tonsDe(c: CorDestaque, escuro: Boolean, contexto: Context): Tons {
     if (c == CorDestaque.AUTOMATICA && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val forte = Color(contexto.getColor(android.R.color.system_accent1_600))
-        val vivo = destaqueVivo(contexto.getColor(android.R.color.system_accent1_300))
-        return Tons(if (escuro) vivo else forte, forte)
+        fun t(id: Int) = Color(contexto.getColor(id))
+        return if (escuro) Tons(t(android.R.color.system_accent1_200), t(android.R.color.system_accent1_900), t(android.R.color.system_accent1_800), t(android.R.color.system_accent1_100))
+        else Tons(t(android.R.color.system_accent1_600), Color.White, t(android.R.color.system_accent1_100), t(android.R.color.system_accent1_900))
     }
-    return Tons(Color(c.hex), Color(if (escuro) c.forteEscuro else c.claro))
-}
-
-/** Mesma cor do papel de parede, mais viva e de brilho médio, para o texto aparecer no escuro. */
-private fun destaqueVivo(cor: Int): Color {
-    val hsl = FloatArray(3)
-    ColorUtils.colorToHSL(cor, hsl)
-    hsl[1] = maxOf(hsl[1], 0.85f)
-    hsl[2] = 0.72f
-    return Color(ColorUtils.HSLToColor(hsl))
+    val m = if (escuro) c.escuro else c.claro
+    return Tons(Color(m.botao), Color(m.noBotao), Color(m.suave), Color(m.noSuave))
 }
 
 private fun escuroDe(f: FundoEscuro, t: Tons): ColorScheme {
     val d = fundoDe(f)
     val fundo = Color(d.fundo)
-    val a = t.texto
     return EsquemaEscuro.copy(
         background = fundo, surface = fundo, surfaceDim = fundo,
         surfaceContainerLowest = Color(d.baixissimo), surfaceContainerLow = Color(d.baixo),
         surfaceContainer = Color(d.medio), surfaceContainerHigh = Color(d.alto),
         surfaceContainerHighest = Color(d.altissimo), surfaceBright = Color(d.brilho),
         surfaceVariant = Color(d.variante), outlineVariant = Color(d.variante),
-        secondary = t.forte, onSecondary = Color.White,
-        secondaryContainer = t.forte, onSecondaryContainer = Color.White,
         onBackground = Color(d.texto), onSurface = Color(d.texto), onSurfaceVariant = Color(d.textoVariante),
         outline = Color(0xFF8E9195),
-        // Texto e ícones: tom claro. Botões e seleções: tom forte com texto branco.
-        primary = a, onPrimary = Color(0xFF101418),
-        primaryContainer = t.forte, onPrimaryContainer = Color.White,
-        tertiary = a, onTertiary = Color(0xFF101418),
-        tertiaryContainer = t.forte, onTertiaryContainer = Color.White,
-        inversePrimary = t.forte,
-    )
+    ).comTons(t)
 }
 
-/** No claro, só o tom forte, com texto branco por cima. */
-private fun claroDe(t: Tons) = BaseClara.copy(
-    primary = t.forte, onPrimary = Color.White,
-    primaryContainer = t.forte, onPrimaryContainer = Color.White,
-    tertiary = t.forte, onTertiary = Color.White,
-    tertiaryContainer = t.forte, onTertiaryContainer = Color.White,
-    secondary = t.forte, onSecondary = Color.White,
-    secondaryContainer = t.forte, onSecondaryContainer = Color.White,
-    inversePrimary = t.texto,
+/** Botão no `primary` (com o texto próprio), suave no `primaryContainer`; seleções usam o botão. */
+private fun ColorScheme.comTons(t: Tons) = copy(
+    primary = t.botao, onPrimary = t.noBotao,
+    primaryContainer = t.suave, onPrimaryContainer = t.noSuave,
+    secondary = t.botao, onSecondary = t.noBotao,
+    secondaryContainer = t.botao, onSecondaryContainer = t.noBotao,
+    tertiary = t.botao, onTertiary = t.noBotao,
+    tertiaryContainer = t.suave, onTertiaryContainer = t.noSuave,
+    inversePrimary = t.botao,
 )
 
+private fun claroDe(t: Tons) = BaseClara.comTons(t)
+
 /** Cor da bolinha na escolha do destaque: o tom do botão no modo atual (Automática: a do papel de parede). */
-fun amostraDe(cor: CorDestaque, escuro: Boolean, contexto: Context): Color = tonsDe(cor, escuro, contexto).forte
+fun amostraDe(cor: CorDestaque, escuro: Boolean, contexto: Context): Color = tonsDe(cor, escuro, contexto).botao
 
 fun nomeDaCor(cor: CorDestaque) = cor.nome
 
@@ -176,21 +161,21 @@ fun TemaLeitor(cor: CorDestaque, tema: TemaApp, fundo: FundoEscuro, content: @Co
     MaterialTheme(colorScheme = esquema, shapes = Formas, content = content)
 }
 
-/** Botão cheio: tom forte do destaque com texto branco. */
+/** Botão cheio: tom do botão com o texto próprio. */
 @androidx.compose.runtime.Composable
 fun corBotao() = androidx.compose.material3.ButtonDefaults.buttonColors(
-    containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
 )
 
-/** Controle deslizante: parte feita no destaque, parte restante neutra. */
+/** Controle deslizante: parte feita no tom do botão, parte restante no suave. */
 @androidx.compose.runtime.Composable
 fun corSlider() = androidx.compose.material3.SliderDefaults.colors(
-    thumbColor = MaterialTheme.colorScheme.primaryContainer,
-    activeTrackColor = MaterialTheme.colorScheme.primaryContainer,
-    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    thumbColor = MaterialTheme.colorScheme.primary,
+    activeTrackColor = MaterialTheme.colorScheme.primary,
+    inactiveTrackColor = MaterialTheme.colorScheme.primaryContainer,
     inactiveTickColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
 )
 
-/** Trilho neutro das barras de uso. */
+/** Trilho das barras de uso: o suave da cor. */
 @androidx.compose.runtime.Composable
-fun trilhoBarra() = MaterialTheme.colorScheme.surfaceContainerHighest
+fun trilhoBarra() = MaterialTheme.colorScheme.primaryContainer
