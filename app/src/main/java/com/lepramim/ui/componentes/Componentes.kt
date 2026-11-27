@@ -140,8 +140,8 @@ fun <T> Segmentado(opcoes: List<Pair<T, String>>, selecionado: T, modifier: Modi
     androidx.compose.foundation.layout.Row(
         modifier.fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(fundo ?: cs.surfaceContainerHigh)
-            .padding(4.dp),
+            .background(fundo ?: cs.background)
+            .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         opcoes.forEach { (valor, nome) ->
@@ -149,7 +149,7 @@ fun <T> Segmentado(opcoes: List<Pair<T, String>>, selecionado: T, modifier: Modi
             val fundo by androidx.compose.animation.animateColorAsState(if (sel) cs.primary else androidx.compose.ui.graphics.Color.Transparent, label = "segmento")
             Box(
                 Modifier.weight(1f)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                     .background(fundo)
                     .clickable { aoEscolher(valor) }
                     .padding(vertical = 10.dp),
