@@ -54,12 +54,22 @@ enum class FonteTexto(val nome: String, val dislexia: Boolean) {
 
 private fun mesAtual() = java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.ROOT).format(java.util.Date())
 
+/** Com que frequência o backup automático grava a cópia. */
+enum class FrequenciaBackup(val nome: String, val periodoMs: Long) {
+    DESLIGADO("Desligado", 0L),
+    DIARIO("Diário", 24L * 60 * 60 * 1000),
+    SEMANAL("Semanal", 7L * 24 * 60 * 60 * 1000),
+}
+
 /** Escolhas de voz. Motor vazio = motor padrão do Android. */
 data class Preferencias(
     val motor: String = "",
     val voz: String = "",
     val velocidade: Float = 1f,
     val destacar: Boolean = true,
+    val pastaBackup: String = "",
+    val frequenciaBackup: FrequenciaBackup = FrequenciaBackup.DESLIGADO,
+    val ultimoBackup: Long = 0L,
     val regiao: String = "canadacentral",
     val chave: String = "",
     val chaveEm: Long = 0L,
@@ -114,6 +124,9 @@ private object Chaves {
     val voz = stringPreferencesKey("voz")
     val velocidade = floatPreferencesKey("velocidade")
     val destacar = booleanPreferencesKey("destacar")
+    val pastaBackup = stringPreferencesKey("pasta_backup")
+    val frequenciaBackup = stringPreferencesKey("frequencia_backup")
+    val ultimoBackup = longPreferencesKey("ultimo_backup")
     val regiao = stringPreferencesKey("regiao")
     val chave = stringPreferencesKey("chave")
     val chaveEm = longPreferencesKey("chave_em")
@@ -144,6 +157,9 @@ class Repositorio(private val contexto: Context) {
             voz = it[Chaves.voz] ?: "",
             velocidade = it[Chaves.velocidade] ?: 1f,
             destacar = it[Chaves.destacar] ?: true,
+            pastaBackup = it[Chaves.pastaBackup] ?: "",
+            frequenciaBackup = runCatching { FrequenciaBackup.valueOf(it[Chaves.frequenciaBackup] ?: "") }.getOrDefault(FrequenciaBackup.DESLIGADO),
+            ultimoBackup = it[Chaves.ultimoBackup] ?: 0L,
             regiao = it[Chaves.regiao] ?: "canadacentral",
             chave = it[Chaves.chave] ?: "",
             chaveEm = it[Chaves.chaveEm] ?: 0L,
@@ -172,6 +188,9 @@ class Repositorio(private val contexto: Context) {
     suspend fun definirVoz(voz: String) = contexto.loja.edit { it[Chaves.voz] = voz }
     suspend fun definirVelocidade(v: Float) = contexto.loja.edit { it[Chaves.velocidade] = v }
     suspend fun definirDestacar(d: Boolean) = contexto.loja.edit { it[Chaves.destacar] = d }
+    suspend fun definirPastaBackup(p: String) = contexto.loja.edit { it[Chaves.pastaBackup] = p }
+    suspend fun definirFrequenciaBackup(f: FrequenciaBackup) = contexto.loja.edit { it[Chaves.frequenciaBackup] = f.name }
+    suspend fun definirUltimoBackup(quando: Long) = contexto.loja.edit { it[Chaves.ultimoBackup] = quando }
     suspend fun definirCor(c: CorDestaque) = contexto.loja.edit { it[Chaves.cor] = c.name }
     suspend fun definirFundo(f: FundoEscuro) = contexto.loja.edit { it[Chaves.fundo] = f.name }
     suspend fun definirTema(t: TemaApp) = contexto.loja.edit { it[Chaves.tema] = t.name }

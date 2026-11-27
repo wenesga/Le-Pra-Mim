@@ -10,4 +10,5 @@ enum class Rota(val titulo: String) {
     APARENCIA("Aparência"),
     ATALHOS("Atalhos"),
     ESCREVER("Escrever texto"),
+    BACKUP("Backup"),
 }

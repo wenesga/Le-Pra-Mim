@@ -69,4 +69,5 @@ dependencies {
     implementation(libs.mlkit.texto)
     implementation(libs.mlkit.scanner)
     implementation(libs.pdfbox)
+    implementation(libs.androidx.documentfile)
 }

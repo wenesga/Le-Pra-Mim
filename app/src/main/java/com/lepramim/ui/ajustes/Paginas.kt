@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.foundation.layout.imePadding
@@ -116,6 +117,7 @@ fun TelaAjustes(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) 
             (if (prefs.markdown) "Markdown" else "Sem Markdown") + " · " + prefs.filtros.size + " próprios"),
         Triple(Rota.APARENCIA, Icons.Outlined.Palette,
             when (prefs.tema) { TemaApp.SISTEMA -> "Sistema"; TemaApp.CLARO -> "Claro"; TemaApp.ESCURO -> "Escuro" } + " · " + nomeDaCor(prefs.cor)),
+        Triple(Rota.BACKUP, Icons.Outlined.Backup, if (prefs.pastaBackup.isEmpty()) "Manual" else "Automático ligado"),
         Triple(Rota.ATALHOS, Icons.Outlined.TouchApp, "Marcar na tela: " + if (acessibilidade) "ligado" else "desligado"),
     )
     Pagina(Rota.AJUSTES.titulo, voltar, avisos) {

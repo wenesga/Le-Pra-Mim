@@ -41,6 +41,7 @@ fun AppLeitor(vm: LeitorViewModel) {
     LaunchedEffect(aviso) { aviso?.let { avisos.showSnackbar(it); vm.avisoLido() } }
 
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_START) { com.lepramim.leitura.Leitura.appVisivel = true }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_START) { vm.backupAutomatico() }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_STOP) { com.lepramim.leitura.Leitura.appVisivel = false }
     LaunchedEffect(Unit) { com.lepramim.leitura.Leitura.avisos.collect { avisos.showSnackbar(it) } }
 
@@ -67,6 +68,7 @@ fun AppLeitor(vm: LeitorViewModel) {
             Rota.FILTROS -> PaginaFiltros(vm, avisos, voltar)
             Rota.APARENCIA -> PaginaAparencia(vm, avisos, voltar)
             Rota.ATALHOS -> PaginaAtalhos(avisos, voltar)
+            Rota.BACKUP -> com.lepramim.ui.ajustes.PaginaBackup(vm, avisos, voltar)
             Rota.ESCREVER -> com.lepramim.ui.leitor.TelaEscrever(vm, voltar) { voltar(); escopoApp.launch { pager.scrollToPage(0) } }
         }
     }

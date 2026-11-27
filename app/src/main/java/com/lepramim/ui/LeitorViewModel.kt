@@ -55,6 +55,86 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun guardar(titulo: String, texto: String) {
         withContext(Dispatchers.IO) { bib.salvar(titulo.trim().ifEmpty { tituloDe(texto) }, texto) }
         _biblioteca.value = withContext(Dispatchers.IO) { bib.listar() }
+        backupAutomatico()
+    }
+
+    /**
+     * Backup automático: grava a cópia na pasta escolhida quando já passou o período (diário ou semanal).
+     * Sem pasta ou desligado, não faz nada. `forcar` grava agora, sem esperar o período.
+     */
+    fun backupAutomatico(forcar: Boolean = false, pasta: String = prefs.value.pastaBackup) {
+        val p = prefs.value
+        if (pasta.isEmpty() || (p.frequenciaBackup == com.lepramim.data.FrequenciaBackup.DESLIGADO && !forcar)) return
+        val agora = System.currentTimeMillis()
+        if (!forcar && agora - p.ultimoBackup < p.frequenciaBackup.periodoMs) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val ok = com.lepramim.data.Backup.gravarNaPasta(getApplication(), Uri.parse(pasta), bib.exportar())
+            if (ok) repo.definirUltimoBackup(agora)
+            else _aviso.value = "Não consegui gravar o backup. Escolha o local de novo em Ajustes → Backup."
+        }
+    }
+
+    fun definirFrequenciaBackup(f: com.lepramim.data.FrequenciaBackup) {
+        viewModelScope.launch { repo.definirFrequenciaBackup(f) }
+    }
+
+    /** Backup manual: grava toda a biblioteca no arquivo que a pessoa escolheu. */
+    fun fazerBackup(destino: Uri) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    getApplication<Application>().contentResolver.openOutputStream(destino, "wt")!!.use { it.write(bib.exportar().toByteArray(Charsets.UTF_8)) }
+                }.isSuccess
+            }
+            _aviso.value = if (ok) "Backup salvo" else "Não foi possível salvar o backup"
+        }
+    }
+
+    /** Restaura um arquivo de backup, sem duplicar o que já existe. */
+    fun restaurarBackup(origem: Uri) {
+        viewModelScope.launch {
+            val novos = withContext(Dispatchers.IO) {
+                runCatching {
+                    val json = getApplication<Application>().contentResolver.openInputStream(origem)!!.use { String(it.readBytes(), Charsets.UTF_8) }
+                    bib.restaurar(json)
+                }.getOrNull()
+            }
+            recarregarBiblioteca()
+            _aviso.value = when (novos) {
+                null -> "Esse arquivo não é um backup do Lê Pra Mim"
+                0 -> "Nada novo para restaurar: todos os textos já estão aqui"
+                1 -> "1 texto restaurado"
+                else -> "$novos textos restaurados"
+            }
+            if (novos != null && novos > 0) backupAutomatico()
+        }
+    }
+
+    /** Escolhe o local do backup automático e já grava a primeira cópia. Sem frequência escolhida, fica diário. */
+    fun escolherPastaBackup(pasta: Uri) {
+        runCatching {
+            getApplication<Application>().contentResolver.takePersistableUriPermission(
+                pasta, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }
+        viewModelScope.launch {
+            repo.definirPastaBackup(pasta.toString())
+            if (prefs.value.frequenciaBackup == com.lepramim.data.FrequenciaBackup.DESLIGADO) repo.definirFrequenciaBackup(com.lepramim.data.FrequenciaBackup.DIARIO)
+            backupAutomatico(forcar = true, pasta = pasta.toString())
+        }
+    }
+
+    fun removerPastaBackup() {
+        val atual = prefs.value.pastaBackup
+        viewModelScope.launch {
+            repo.definirPastaBackup("")
+            repo.definirFrequenciaBackup(com.lepramim.data.FrequenciaBackup.DESLIGADO)
+            if (atual.isNotEmpty()) runCatching {
+                getApplication<Application>().contentResolver.releasePersistableUriPermission(
+                    Uri.parse(atual), android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+        }
     }
 
     /** Escrever texto: guarda na biblioteca e deixa o texto pronto na Leitura, sem tocar sozinho. */
@@ -84,11 +164,11 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
     fun renomearItem(id: String, titulo: String) {
         val novo = titulo.trim()
         if (novo.isEmpty()) return
-        viewModelScope.launch { withContext(Dispatchers.IO) { bib.renomear(id, novo) }; recarregarBiblioteca() }
+        viewModelScope.launch { withContext(Dispatchers.IO) { bib.renomear(id, novo) }; recarregarBiblioteca(); backupAutomatico() }
     }
 
     fun excluirItem(id: String) {
-        viewModelScope.launch { withContext(Dispatchers.IO) { bib.excluir(id) }; recarregarBiblioteca() }
+        viewModelScope.launch { withContext(Dispatchers.IO) { bib.excluir(id) }; recarregarBiblioteca(); backupAutomatico() }
     }
     val prefs: StateFlow<Preferencias> = repo.preferencias.stateIn(viewModelScope, SharingStarted.Eagerly, Preferencias())
 
