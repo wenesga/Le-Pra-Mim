@@ -13,8 +13,8 @@ android {
         applicationId = "com.lepramim"
         minSdk = 30
         targetSdk = 37
-        versionCode = 10
-        versionName = "0.5.4"
+        versionCode = 11
+        versionName = "0.5.5"
     }
 
     // A chave fica fora do repositório, em keystore.properties.

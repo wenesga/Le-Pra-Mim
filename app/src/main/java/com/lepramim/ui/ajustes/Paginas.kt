@@ -150,7 +150,7 @@ fun TelaAjustes(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) 
 fun PaginaVoz(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -> Unit, voltar: () -> Unit) {
     val prefs by vm.prefs.collectAsStateWithLifecycle()
     Pagina(Rota.VOZ.titulo, voltar, avisos) {
-        Secao("Motor", margemVertical = Espaco.m) { SeletorMotor(vm) }
+        Secao("Motor") { SeletorMotor(vm) }
         Secao("Voz") {
             if (prefs.azure) {
                 if (prefs.chave.isEmpty()) {
