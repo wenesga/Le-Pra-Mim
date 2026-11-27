@@ -158,6 +158,20 @@ class LeitorViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Guarda na biblioteca o texto que está na Leitura (sem repetir um que já esteja lá). */
+    fun guardarAtual() {
+        val texto = Leitura.texto.value
+        if (texto.isBlank()) return
+        viewModelScope.launch {
+            if (_biblioteca.value.any { it.texto == texto }) {
+                _aviso.value = "Já está na biblioteca"
+            } else {
+                guardar("", texto)
+                _aviso.value = "Guardado na biblioteca"
+            }
+        }
+    }
+
     /** Abre um item da biblioteca na Leitura. */
     fun abrirDaBiblioteca(item: com.lepramim.data.ItemBiblioteca) = Leitura.editar(getApplication(), item.texto)
 

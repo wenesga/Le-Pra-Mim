@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Delete
@@ -172,6 +173,11 @@ fun TelaLeitor(vm: LeitorViewModel, avisos: SnackbarHostState, navegar: (Rota) -
                             text = { Text("Copiar") }, enabled = temTexto,
                             leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
                             onClick = { menu = false; Leitura.copiarTexto(contexto) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Salvar") }, enabled = temTexto,
+                            leadingIcon = { Icon(Icons.Outlined.BookmarkAdd, contentDescription = null) },
+                            onClick = { menu = false; vm.guardarAtual() },
                         )
                         DropdownMenuItem(
                             text = { Text("Limpar") }, enabled = temTexto,

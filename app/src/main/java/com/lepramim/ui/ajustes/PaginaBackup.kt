@@ -60,7 +60,7 @@ fun PaginaBackup(vm: LeitorViewModel, avisos: SnackbarHostState, voltar: () -> U
     val pasta = prefs.pastaBackup
     Pagina("Backup", voltar, avisos) {
         Column(verticalArrangement = Arrangement.spacedBy(Espaco.m)) {
-            LinhaBackup(Icons.Outlined.CloudUpload, "Fazer backup", "Salva a biblioteca num arquivo", ativo = itens.isNotEmpty()) {
+            LinhaBackup(Icons.Outlined.CloudUpload, "Fazer backup", "Backup da biblioteca", ativo = itens.isNotEmpty()) {
                 criar.launch("LePraMim_biblioteca_" + SimpleDateFormat("dd-MM-yy_HH-mm", Locale.ROOT).format(Date()) + ".json")
             }
             LinhaBackup(Icons.Outlined.History, "Restaurar backup", "Restaura a biblioteca") { abrir.launch(arrayOf("*/*")) }
